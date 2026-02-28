@@ -1,0 +1,136 @@
+[
+  {
+    "firstName": "Vishwa",
+    "lastName": "Mistry",
+    "email": "vishwamistry1812@gmail.com",
+    "phone": "7656567676",
+    "address": "C-87",
+    "city": "Mumbai",
+    "zipCode": "765676",
+    "packageId": "thailand-1",
+    "packageTitle": "Phuket Island Hopping",
+    "packageImage": "https://images.unsplash.com/photo-1506665531195-3566af2b4dfa?auto=format&fit=crop&q=80&w=1000",
+    "totalAmount": 17175,
+    "currency": "THB",
+    "flight": {
+      "departure": "Mumbai",
+      "arrival": "Thailand",
+      "departureDate": "2026-02-28",
+      "returnDate": "",
+      "class": "Economy"
+    },
+    "hotel": {
+      "hotelId": "",
+      "checkIn": "",
+      "checkOut": "",
+      "guests": 2
+    },
+    "addons": [],
+    "pricing": {
+      "base": 14025,
+      "taxes": 1650,
+      "service": 825,
+      "vehicleCharge": 675,
+      "otherAddonsTotal": 0,
+      "classSurcharge": 0,
+      "total": 17175
+    },
+    "numTravelers": 1,
+    "selectedVehicle": "flight",
+    "id": "1772274793303",
+    "status": "Confirmed",
+    "createdAt": "2026-02-28T10:33:13.303Z",
+    "paymentId": "pay_viv4o35t14l",
+    "paymentDate": "2/28/2026, 4:03:20 PM"
+  },
+  {
+    "firstName": "Vishwa",
+    "lastName": "Mistry",
+    "email": "vishwamistry1812@gmail.com",
+    "phone": "+917657656565",
+    "address": "C-87, Zaveri Park ",
+    "city": "Ahmedabad",
+    "zipCode": "876989",
+    "packageId": "dubai-1",
+    "packageTitle": "Dubai Desert Luxury",
+    "packageImage": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=1000",
+    "totalAmount": 11175,
+    "currency": "AED",
+    "flight": {
+      "departure": "C-87, Zaveri Park, Ahemdabad",
+      "arrival": "Dubai",
+      "departureDate": "2026-03-28",
+      "returnDate": "",
+      "class": "Premium Economy"
+    },
+    "hotel": {
+      "hotelId": "",
+      "checkIn": "",
+      "checkOut": "",
+      "guests": 2
+    },
+    "addons": [
+      "hotel"
+    ],
+    "pricing": {
+      "base": 8416,
+      "taxes": 990,
+      "service": 496,
+      "vehicleCharge": 675,
+      "otherAddonsTotal": 450,
+      "classSurcharge": 150,
+      "total": 11175
+    },
+    "numTravelers": 2,
+    "selectedVehicle": "flight",
+    "id": "1772277026606",
+    "status": "Confirmed",
+    "createdAt": "2026-02-28T11:10:26.606Z",
+    "paymentId": "pay_02r1axgp9ttm",
+    "paymentDate": "2/28/2026, 4:40:37 PM"
+  },
+  {
+    "firstName": "Vishwa",
+    "lastName": "Mistry",
+    "email": "vishwamistry18@gmail.com",
+    "phone": "8778787877",
+    "address": "Ahemdabad",
+    "city": "Mumbai",
+    "zipCode": "8787878",
+    "packageId": "rajasthan-3",
+    "packageTitle": "Rajasthan Desert Safari",
+    "packageImage": "https://images.unsplash.com/photo-1545051905-39115d3b090e?auto=format&fit=crop&q=80&w=1000",
+    "totalAmount": 24475,
+    "currency": "INR",
+    "flight": {
+      "departure": "",
+      "arrival": "Rajasthan",
+      "departureDate": "",
+      "returnDate": "",
+      "class": "Economy"
+    },
+    "hotel": {
+      "hotelId": "",
+      "checkIn": "",
+      "checkOut": "",
+      "guests": 2
+    },
+    "addons": [],
+    "pricing": {
+      "base": 20570,
+      "taxes": 2420,
+      "service": 1210,
+      "vehicleCharge": 275,
+      "otherAddonsTotal": 0,
+      "classSurcharge": 0,
+      "total": 24475
+    },
+    "numTravelers": 1,
+    "selectedVehicle": "bike",
+    "id": "1772277234778",
+    "status": "Confirmed",
+    "createdAt": "2026-02-28T11:13:54.778Z",
+    "paymentId": "pay_fw4o30654c7",
+    "paymentDate": "2/28/2026, 4:44:03 PM"
+  }
+]

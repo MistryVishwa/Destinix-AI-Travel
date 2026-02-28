@@ -1,0 +1,7 @@
+{
+  "name": "Destinix Travel",
+  "description": "A premium AI-powered travel agency platform featuring personalized trip planning, smart advisor chat, and luxury package recommendations.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
