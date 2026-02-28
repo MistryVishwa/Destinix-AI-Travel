@@ -83,14 +83,14 @@ const App: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilters, setSearchFilters] = useState<any>({});
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => getCurrentUser());
   const [showAuth, setShowAuth] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<TravelPackage | null>(null);
   const [email, setEmail] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch user on mount
+  // Fetch user on mount (redundant but good for syncing if needed)
   useEffect(() => {
     const activeUser = getCurrentUser();
     if (activeUser) setUser(activeUser);
@@ -530,6 +530,7 @@ const App: React.FC = () => {
   const renderBooking = () => selectedPackage ? (
     <BookingPage 
       pkg={selectedPackage} 
+      user={user}
       onBack={() => navigate(`/packages/${selectedPackage.slug}`)}
       onConfirm={(data) => {
         setNotification(`Booking confirmed for ${data.pkg.title}!`);

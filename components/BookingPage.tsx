@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TravelPackage } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { TravelPackage, User } from '../types';
 import { formatCurrency, calculateInr } from '../utils/currency';
 import { generateReceiptPDF } from '../utils/receipt';
 import { jsPDF } from 'jspdf';
@@ -10,7 +11,7 @@ import {
   Car, Plane, Bike, Hotel, Sparkles, 
   CheckCircle2, CreditCard, ShieldCheck, 
   ChevronLeft, Info, Wallet, MapPin, Calendar as CalendarIcon,
-  ArrowRight, User, Mail, Phone, Home, Loader2, Bell
+  ArrowRight, User as UserIcon, Mail, Phone, Home, Loader2, Bell
 } from 'lucide-react';
 
 declare global {
@@ -21,11 +22,13 @@ declare global {
 
 interface BookingPageProps {
   pkg: TravelPackage;
+  user: User | null;
   onBack: () => void;
   onConfirm: (data: any) => void;
 }
 
-const BookingPage: React.FC<BookingPageProps> = ({ pkg, onBack, onConfirm }) => {
+const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm }) => {
+  const navigate = useNavigate();
   if (!pkg) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-950 text-white">
@@ -173,11 +176,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, onBack, onConfirm }) => 
     setTimeout(() => setToast(null), 4000);
   };
   const [userDetails, setUserDetails] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
+    firstName: user?.name.split(' ')[0] || '',
+    lastName: user?.name.split(' ').slice(1).join(' ') || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || '',
     city: '',
     zipCode: ''
   });
@@ -501,7 +504,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, onBack, onConfirm }) => 
                         <span className="text-amber-400 text-xs font-bold">★ {pkg.rating}</span>
                       </div>
                       <div className="flex items-center bg-black/40 border border-white/10 rounded-2xl px-4 py-2">
-                        <User className="w-4 h-4 text-gray-500 mr-2" />
+                        <UserIcon className="w-4 h-4 text-gray-500 mr-2" />
                         <select 
                           value={numTravelers}
                           onChange={(e) => setNumTravelers(parseInt(e.target.value))}
@@ -613,14 +616,14 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, onBack, onConfirm }) => 
                       {/* Traveler Information (Common) */}
                       <div className="space-y-6">
                         <div className="flex items-center space-x-2 mb-4">
-                          <User className="w-4 h-4 text-indigo-400" />
+                          <UserIcon className="w-4 h-4 text-indigo-400" />
                           <h4 className="text-sm font-bold text-white uppercase tracking-widest">Traveler Information</h4>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">First Name</label>
                             <div className="relative">
-                              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                               <input 
                                 type="text" 
                                 value={userDetails.firstName}
@@ -633,7 +636,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, onBack, onConfirm }) => 
                           <div className="space-y-2">
                             <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Last Name</label>
                             <div className="relative">
-                              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                               <input 
                                 type="text" 
                                 value={userDetails.lastName}
@@ -1218,7 +1221,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, onBack, onConfirm }) => 
                         Receipt
                       </button>
                       <button
-                        onClick={() => window.location.href = '/profile'}
+                        onClick={() => navigate('/profile')}
                         className="bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl text-white font-bold transition-all"
                       >
                         Go to Profile
