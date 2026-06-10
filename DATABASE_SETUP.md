@@ -59,7 +59,18 @@ npx prisma db push
 
 ---
 
-## 5. Deploying to Vercel (Production)
+## 5. Seed Initial Data
+Since the database has been normalized, the `TravelPackage` table needs to be populated with the initial mock packages so that the `Booking` relational foreign keys function correctly.
+
+Run the seed script:
+```bash
+npx tsx seed.ts
+```
+*Note: This will read the packages from `constants.tsx` and insert them into the database.*
+
+---
+
+## 6. Deploying to Vercel (Production)
 When deploying the application to Vercel, the local `.env` file is ignored. You must configure these variables securely in your Vercel project settings.
 
 1. Go to your **Vercel Dashboard** -> **Project Settings** -> **Environment Variables**.
