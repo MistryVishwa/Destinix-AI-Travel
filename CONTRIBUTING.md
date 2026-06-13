@@ -60,11 +60,89 @@ git checkout -b feat/your-feature-name
 * Make your changes, keeping the commits focused and clean.
 
 ### Step 5: Commit Your Changes
-We follow semantic commit message guidelines. Write clear, concise commit messages:
-* `feat: add Google Maps route visualization`
-* `fix: correct booking date validation`
-* `docs: update setup steps in README`
-* `style: adjust layout spacing on mobile views`
+
+This project enforces **Conventional Commits** via a `commit-msg` git hook powered by [commitlint](https://commitlint.js.org/). Non-conforming commits will be **rejected automatically**.
+
+#### Commit Format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+#### Allowed Types
+
+| Type | When to use |
+|------|-------------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `style` | Formatting, whitespace (no logic change) |
+| `refactor` | Restructuring without feature/fix |
+| `perf` | Performance improvement |
+| `test` | Adding or updating tests |
+| `build` | Build system or dependency changes |
+| `ci` | CI/CD configuration |
+| `chore` | Maintenance tasks |
+| `revert` | Revert a previous commit |
+
+#### Good Commits
+
+```bash
+# Simple feature
+feat: add Google Maps route visualization
+
+# Feature with scope
+feat(booking): add date range picker to trip form
+
+# Bug fix with issue reference
+fix(auth): resolve session expiration on page refresh
+
+Closes #42
+
+# Breaking change
+feat(api)!: change itinerary response to camelCase
+
+BREAKING CHANGE: All API responses now use camelCase keys.
+Update any clients that relied on snake_case fields.
+
+# Documentation update
+docs: add environment variable setup to README
+
+# Chore with scope
+chore(deps): upgrade react-router-dom to v7
+```
+
+#### Bad Commits — Will Be Rejected
+
+```bash
+# No type prefix
+git commit -m "added login page"
+#  ERROR: subject may not be empty / type is missing
+
+# Invalid type
+git commit -m "update: fix broken link"
+#  ERROR: type must be one of [feat, fix, docs, ...]
+
+# Wrong tense
+git commit -m "feat: added new search filter"
+#  ERROR: subject-case — use imperative mood ("add", not "added")
+
+# All caps description
+git commit -m "fix: Fix The Login Bug"
+#  ERROR: subject-case must be lower-case
+
+# Description too long (>72 chars)
+git commit -m "feat: add a brand new feature that lets users export their travel itinerary data in multiple formats"
+#  ERROR: subject-max-length exceeded
+
+# Vague message
+git commit -m "chore: misc changes"
+#  Better: "chore: remove unused imports from BookingPage"
+```
 
 ```bash
 git add .

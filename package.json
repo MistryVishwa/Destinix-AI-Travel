@@ -7,7 +7,8 @@
     "dev": "tsx server.ts",
     "build": "vite build",
     "lint": "tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "husky"
   },
   "dependencies": {
     "@google/genai": "^1.42.0",
@@ -28,11 +29,14 @@
     "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.0.2",
+    "@commitlint/config-conventional": "^21.0.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.14.0",
     "@types/pg": "^8.20.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "husky": "^9.1.7",
     "prisma": "^7.8.0",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
