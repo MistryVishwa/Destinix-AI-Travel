@@ -1,0 +1,64 @@
+{
+  "navbar": {
+    "home": "Home",
+    "planner": "AI Planner",
+    "packages": "Packages",
+    "about": "About",
+    "contact": "Contact",
+    "signIn": "Sign In",
+    "signInRegister": "Sign In / Register",
+    "signOut": "Sign Out",
+    "myDashboard": "My Dashboard",
+    "myProfile": "My Profile",
+    "settings": "Settings",
+    "planATrip": "Plan a Trip"
+  },
+  "hero": {
+    "tagline": "AI-powered planning for your next legendary journey.",
+    "searchPlaceholder": "Where would you like to go?",
+    "exploreButton": "Explore Now",
+    "slides": [
+      { "title": "The Future of Adventure", "subtitle": "Luxury Travel Reimagined" },
+      { "title": "Pristine Coastal Escapes", "subtitle": "Discover Hidden Paradises" },
+      { "title": "Cultural Immersion", "subtitle": "Ancient Traditions, Modern Comfort" }
+    ]
+  },
+  "cta": {
+    "headingLine1": "READY TO START",
+    "headingLine2": "YOUR NEXT ADVENTURE?",
+    "subheading": "Join 50,000+ travelers who trust Destinix for their dream vacations. Intelligent planning, curated luxury, and global support.",
+    "explorePackages": "Explore Packages",
+    "planWithAI": "Plan with AI",
+    "registerNow": "Register Now"
+  },
+  "auth": {
+    "welcomeBack": "Welcome Back",
+    "joinDestinix": "Join Destinix",
+    "resetPassword": "Reset Password",
+    "fullName": "Full Name",
+    "emailAddress": "Email Address",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "processing": "Processing...",
+    "signIn": "Sign In",
+    "createAccount": "Create Account",
+    "sendResetLink": "Send Reset Link",
+    "dontHaveAccount": "Don't have an account?",
+    "signUp": "Sign Up",
+    "alreadyHaveAccount": "Already have an account?",
+    "resetLinkSent": "Reset link sent! Check your inbox.",
+    "errorFillAllFields": "Please fill all fields",
+    "errorPasswordMinLength": "Password must be at least 6 characters",
+    "errorEnterEmail": "Please enter your email"
+  },
+  "advisor": {
+    "title": "Travel Advisor",
+    "welcomeMessage": "🌍 Welcome to Destinix AI\n\nLooking for travel inspiration or need help with a booking?\n\nYou can ask about:\n• Honeymoon trips\n• Budget travel\n• Weekend getaways\n• International destinations",
+    "inputPlaceholder": "Ask me anything...",
+    "exploreMore": "Explore More:",
+    "viewPackages": "View Packages →",
+    "destinationGuide": "Destination Guide →",
+    "connectionError": "⚠ I'm having trouble connecting right now. Please try again.",
+    "defaultRecommendation": "Here's your travel recommendation."
+  }
+}

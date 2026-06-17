@@ -48,9 +48,10 @@ export const generateItinerary = async (prompt: string): Promise<ItineraryRespon
   return JSON.parse(response.text || '{}');
 };
 
-export const generateTripPlan = async (destination: string, days: number, budget: string, vibe: string): Promise<TripPlan> => {
+export const generateTripPlan = async (destination: string, days: number, budget: string, vibe: string, language: string = 'en'): Promise<TripPlan> => {
   const ai = getGeminiClient();
-  const prompt = `Generate a comprehensive trip plan for ${destination} for ${days} days. 
+  const languageInstruction = language === 'hi' ? 'Respond entirely in Hindi (Devanagari script). ' : '';
+  const prompt = `${languageInstruction}Generate a comprehensive trip plan for ${destination} for ${days} days.
   Budget level: ${budget}. Vibe: ${vibe}.
   Provide a destination overview, estimated budget in ${budget} currency if applicable (otherwise USD), best time to visit, hotel suggestions, highlights (adventure, food, culture, nature, relaxation), a budget breakdown (stay, transport, activities, food as percentages/numbers), travel tips, packing suggestions, safety advice, current typical weather, and a detailed day-by-day itinerary.`;
 
@@ -131,20 +132,22 @@ export const generateTripPlan = async (destination: string, days: number, budget
   return JSON.parse(response.text || '{}');
 };
 
-export const chatWithAdvisor = async (message: string, history: { role: 'user' | 'assistant', content: string }[]): Promise<string> => {
+export const chatWithAdvisor = async (message: string, history: { role: 'user' | 'assistant', content: string }[], language: string = 'en'): Promise<string> => {
   const ai = getGeminiClient();
-  
+
   // Map history to Gemini format: 'user' -> 'user', 'assistant' -> 'model'
   const geminiHistory = history.map(h => ({
     role: h.role === 'user' ? 'user' : 'model',
     parts: [{ text: h.content }]
   }));
 
+  const languageInstruction = language === 'hi' ? ' Respond entirely in Hindi (Devanagari script).' : '';
+
   const chat = ai.chats.create({
     model: 'gemini-3-pro-preview',
     history: geminiHistory,
     config: {
-      systemInstruction: "You are Destinix AI, a world-class travel advisor. You are helpful, professional, and have deep knowledge of global destinations, cultures, and travel logistics. Keep your responses concise but insightful."
+      systemInstruction: `You are Destinix AI, a world-class travel advisor. You are helpful, professional, and have deep knowledge of global destinations, cultures, and travel logistics. Keep your responses concise but insightful.${languageInstruction}`
     }
   });
 

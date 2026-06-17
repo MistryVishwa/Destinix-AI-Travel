@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -38,6 +39,7 @@ const TypingText: React.FC<{ text: string; speed?: number }> = ({ text, speed = 
 };
 
 const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }) => {
+  const { i18n } = useTranslation();
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState(3);
   const [budget, setBudget] = useState('Moderate');
@@ -71,7 +73,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
     setIsSaved(false);
 
     try {
-      const generated = await generateTripPlan(destination, days, budget, vibe);
+      const generated = await generateTripPlan(destination, days, budget, vibe, i18n.language);
       setPlan(generated);
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });

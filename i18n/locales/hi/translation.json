@@ -1,0 +1,64 @@
+{
+  "navbar": {
+    "home": "होम",
+    "planner": "एआई प्लानर",
+    "packages": "पैकेज",
+    "about": "हमारे बारे में",
+    "contact": "संपर्क करें",
+    "signIn": "साइन इन",
+    "signInRegister": "साइन इन / रजिस्टर करें",
+    "signOut": "साइन आउट",
+    "myDashboard": "मेरा डैशबोर्ड",
+    "myProfile": "मेरी प्रोफ़ाइल",
+    "settings": "सेटिंग्स",
+    "planATrip": "यात्रा की योजना बनाएं"
+  },
+  "hero": {
+    "tagline": "आपकी अगली अविस्मरणीय यात्रा के लिए एआई-संचालित योजना।",
+    "searchPlaceholder": "आप कहाँ जाना चाहेंगे?",
+    "exploreButton": "अभी एक्सप्लोर करें",
+    "slides": [
+      { "title": "साहसिक यात्रा का भविष्य", "subtitle": "लग्जरी ट्रैवल की नई परिभाषा" },
+      { "title": "अनछुए समुद्री किनारे", "subtitle": "छिपे हुए स्वर्ग की खोज करें" },
+      { "title": "सांस्कृतिक अनुभव", "subtitle": "प्राचीन परंपराएँ, आधुनिक सुविधा" }
+    ]
+  },
+  "cta": {
+    "headingLine1": "क्या आप तैयार हैं",
+    "headingLine2": "अपनी अगली यात्रा के लिए?",
+    "subheading": "50,000+ यात्रियों के साथ जुड़ें जो अपनी सपनों की छुट्टियों के लिए Destinix पर भरोसा करते हैं। स्मार्ट योजना, क्यूरेटेड लग्जरी, और ग्लोबल सपोर्ट।",
+    "explorePackages": "पैकेज देखें",
+    "planWithAI": "एआई के साथ योजना बनाएं",
+    "registerNow": "अभी रजिस्टर करें"
+  },
+  "auth": {
+    "welcomeBack": "वापसी पर स्वागत है",
+    "joinDestinix": "Destinix से जुड़ें",
+    "resetPassword": "पासवर्ड रीसेट करें",
+    "fullName": "पूरा नाम",
+    "emailAddress": "ईमेल पता",
+    "password": "पासवर्ड",
+    "forgotPassword": "पासवर्ड भूल गए?",
+    "processing": "प्रोसेस हो रहा है...",
+    "signIn": "साइन इन करें",
+    "createAccount": "खाता बनाएं",
+    "sendResetLink": "रीसेट लिंक भेजें",
+    "dontHaveAccount": "खाता नहीं है?",
+    "signUp": "साइन अप करें",
+    "alreadyHaveAccount": "पहले से खाता है?",
+    "resetLinkSent": "रीसेट लिंक भेज दिया गया है! अपना इनबॉक्स देखें।",
+    "errorFillAllFields": "कृपया सभी फ़ील्ड भरें",
+    "errorPasswordMinLength": "पासवर्ड कम से कम 6 अक्षरों का होना चाहिए",
+    "errorEnterEmail": "कृपया अपना ईमेल दर्ज करें"
+  },
+  "advisor": {
+    "title": "ट्रैवल एडवाइज़र",
+    "welcomeMessage": "🌍 Destinix AI में आपका स्वागत है\n\nयात्रा प्रेरणा या बुकिंग में मदद चाहिए?\n\nआप इनके बारे में पूछ सकते हैं:\n• हनीमून ट्रिप\n• बजट यात्रा\n• वीकेंड गेटअवे\n• अंतरराष्ट्रीय गंतव्य",
+    "inputPlaceholder": "मुझसे कुछ भी पूछें...",
+    "exploreMore": "और जानें:",
+    "viewPackages": "पैकेज देखें →",
+    "destinationGuide": "गंतव्य गाइड →",
+    "connectionError": "⚠ अभी कनेक्ट करने में समस्या हो रही है। कृपया फिर से प्रयास करें।",
+    "defaultRecommendation": "यह है आपकी यात्रा सिफारिश।"
+  }
+}
