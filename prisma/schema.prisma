@@ -107,3 +107,17 @@ model Review {
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   package   TravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }
+
+model Expense {
+  id        String   @id @default(cuid())
+  userId    String
+  tripLabel String
+  category  String   // "food" | "transport" | "stay" | "activities" | "other"
+  amount    Float
+  currency  String   @default("INR")
+  amountINR Float    // converted value stored at time of entry
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

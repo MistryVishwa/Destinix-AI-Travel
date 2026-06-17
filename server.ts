@@ -10,6 +10,7 @@ import nodemailer from "nodemailer";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import { convertToINR } from "./services/currencyService";
 
 dotenv.config();
 
@@ -445,6 +446,89 @@ app.post("/api/verify-payment", (req, res) => {
     res.json({ success: true, message: "Payment verified successfully" });
   } else {
     res.status(400).json({ error: "Invalid signature" });
+  }
+});
+
+const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'stay', 'activities', 'other'];
+
+app.post("/api/expenses", async (req, res) => {
+  const { userId, tripLabel, category, amount, currency, note } = req.body;
+
+  if (!userId || !tripLabel || !category || typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({
+      error: "Invalid request",
+      message: "userId, tripLabel, category, and a positive amount are required.",
+    });
+  }
+
+  if (!VALID_EXPENSE_CATEGORIES.includes(category)) {
+    return res.status(400).json({
+      error: "Invalid request",
+      message: `category must be one of: ${VALID_EXPENSE_CATEGORIES.join(', ')}`,
+    });
+  }
+
+  const currencyCode = (currency || 'INR').toUpperCase();
+
+  let amountINR: number;
+  try {
+    amountINR = await convertToINR(amount, currencyCode);
+  } catch (error: any) {
+    console.error("Currency conversion failed:", error);
+    return res.status(502).json({
+      error: "Conversion failed",
+      message: "Could not determine an INR conversion rate. Please try again.",
+    });
+  }
+
+  try {
+    const expense = await prisma.expense.create({
+      data: {
+        userId,
+        tripLabel,
+        category,
+        amount,
+        currency: currencyCode,
+        amountINR,
+        note: note || null,
+      },
+    });
+    res.status(201).json({ success: true, data: expense });
+  } catch (error: any) {
+    console.error("Create expense error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to create expense." });
+  }
+});
+
+app.get("/api/expenses/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const expenses = await prisma.expense.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: expenses });
+  } catch (error: any) {
+    console.error("Fetch expenses error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to fetch expenses." });
+  }
+});
+
+app.delete("/api/expenses/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const existing = await prisma.expense.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Not Found", message: "Expense not found." });
+    }
+
+    await prisma.expense.delete({ where: { id } });
+    res.json({ success: true, message: "Expense deleted." });
+  } catch (error: any) {
+    console.error("Delete expense error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to delete expense." });
   }
 });
 

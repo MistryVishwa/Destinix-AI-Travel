@@ -7,10 +7,11 @@ import PackageCard from './PackageCard';
 import { generateReceiptPDF } from '../utils/receipt';
 import { formatCurrency } from '../utils/currency';
 import InvoiceTemplate from './InvoiceTemplate';
-import { 
-  Calendar, MapPin, CreditCard, Download, ChevronRight, 
-  Clock, CheckCircle, AlertCircle, Loader2, Plane, 
-  Hotel, Users, Bell, User as UserIcon 
+import ExpenseTracker from './ExpenseTracker';
+import {
+  Calendar, MapPin, CreditCard, Download, ChevronRight,
+  Clock, CheckCircle, AlertCircle, Loader2, Plane,
+  Hotel, Users, Bell, User as UserIcon, Wallet
 } from 'lucide-react';
 
 interface ProfileProps {
@@ -21,7 +22,7 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, onViewPackage }) => {
-  const [activeTab, setActiveTab] = useState<'settings' | 'trips' | 'alerts' | 'bookings'>('bookings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'trips' | 'alerts' | 'bookings' | 'expenses'>('bookings');
   const [formData, setFormData] = useState({
     name: user.name,
     phone: user.phone || '',
@@ -176,6 +177,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                 { id: 'bookings', label: 'My Bookings', icon: <CreditCard className="w-5 h-5" /> },
                 { id: 'settings', label: 'Profile Settings', icon: <UserIcon className="w-5 h-5" /> },
                 { id: 'trips', label: 'Saved Trips', icon: <Plane className="w-5 h-5" /> },
+                { id: 'expenses', label: 'Expense Tracker', icon: <Wallet className="w-5 h-5" /> },
                 { id: 'alerts', label: 'Price Alerts', icon: <Bell className="w-5 h-5" /> }
               ].map(tab => (
                 <button 
@@ -455,6 +457,10 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'expenses' && (
+            <ExpenseTracker userId={user.id} />
           )}
 
           {activeTab === 'alerts' && (

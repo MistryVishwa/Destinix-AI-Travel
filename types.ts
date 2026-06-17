@@ -162,6 +162,20 @@ export interface Booking {
   selectedVehicle: string | null;
 }
 
+export type ExpenseCategory = 'food' | 'transport' | 'stay' | 'activities' | 'other';
+
+export interface Expense {
+  id: string;
+  userId: string;
+  tripLabel: string;
+  category: ExpenseCategory;
+  amount: number;
+  currency: string;
+  amountINR: number;
+  note: string | null;
+  createdAt: string;
+}
+
 export enum Page {
   Home = 'home',
   Planner = 'planner',
