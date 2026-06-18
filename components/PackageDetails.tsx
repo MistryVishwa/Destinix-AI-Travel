@@ -3,9 +3,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TravelPackage } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, MapPin, Calendar, Wallet, Sparkles, ShieldCheck, Play, Info, CheckCircle2, Hotel, Utensils, Plane, Car, Camera, UserCheck, XCircle, Loader2, Check, X, Star, MessageSquare } from 'lucide-react';
+import { ChevronDown, MapPin, Calendar, Wallet, Sparkles, ShieldCheck, Play, Info, CheckCircle2, Hotel, Utensils, Plane, Car, Camera, UserCheck, XCircle, Loader2, Check, X, Star, MessageSquare, Share2 } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
+import ShareModal from './ShareModal';
 
 const DESTINATION_VIDEOS: Record<string, string[]> = {
   'goa': [
@@ -86,8 +87,9 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   onBook,
   onRequireAuth
 }) => {
-const { t } = useTranslation();
-const [images, setImages] = useState<string[]>([]);
+  const { t } = useTranslation();
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
 const [activeImg, setActiveImg] = useState<string | null>(pkg.image || (Array.isArray(pkg.gallery) && pkg.gallery.length > 0 ? pkg.gallery[0] : null));
 const [loadingImages, setLoadingImages] = useState(false);
 
@@ -303,22 +305,32 @@ const handleSubmitReview = async (e: React.FormEvent) => {
             </svg>
             {t('packageDetails.backToExplorations')}
           </button>
-
-          {onToggleSave && (
-            <button
-              onClick={() => onToggleSave(pkg)}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold transition-all border backdrop-blur-md ${
-                isSaved
-                ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20'
-                : 'bg-white/5 border-white/10 text-gray-400 hover:border-red-500/50 hover:text-red-400'
-              }`}
+          
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => setIsShareOpen(true)}
+              className="flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold transition-all border backdrop-blur-md bg-white/5 border-white/10 text-gray-400 hover:border-indigo-500/50 hover:text-indigo-400"
             >
-              <svg className="w-5 h-5" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span>{isSaved ? t('packageDetails.saved') : t('packageDetails.savePackage')}</span>
+              <Share2 className="w-5 h-5" />
+              <span>Share</span>
             </button>
-          )}
+
+            {onToggleSave && (
+              <button
+                onClick={() => onToggleSave(pkg)}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold transition-all border backdrop-blur-md ${
+                  isSaved
+                  ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20'
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:border-red-500/50 hover:text-red-400'
+                }`}
+              >
+                <svg className="w-5 h-5" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span>{isSaved ? t('packageDetails.saved') : t('packageDetails.savePackage')}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -744,6 +756,15 @@ const handleSubmitReview = async (e: React.FormEvent) => {
         </section>
 
       </div>
+
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        shareUrl={window.location.href}
+        shareTitle={pkg.title}
+        shareText={`Hey! I found this amazing travel package for ${pkg.destination} on Destinix: "${pkg.title}". Check it out: `}
+        shareSubject={`Plan a trip to ${pkg.destination} with me!`}
+      />
     </div>
   );
 };
