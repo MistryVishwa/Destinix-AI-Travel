@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TravelPackage } from '../types';
 import { formatCurrency } from '../utils/currency';
 
@@ -10,6 +11,7 @@ interface PackageModalProps {
 }
 
 const PackageModal: React.FC<PackageModalProps> = ({ pkg, onClose, onBook }) => {
+  const { t } = useTranslation();
   const [currentImg, setCurrentImg] = useState(0);
   const gallery = pkg.gallery || [
     pkg.image,
@@ -90,11 +92,11 @@ const PackageModal: React.FC<PackageModalProps> = ({ pkg, onClose, onBook }) => 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/5 border border-white/10 p-4 rounded-3xl">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Starting From</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">{t('packageModal.startingFrom')}</p>
               <p className="text-2xl font-bold text-white tracking-tight">{formatCurrency(pkg.price, pkg.currency, true)}</p>
             </div>
             <div className="bg-white/5 border border-white/10 p-4 rounded-3xl">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Trip Length</p>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">{t('packageModal.tripLength')}</p>
               <p className="text-2xl font-bold text-white tracking-tight">{pkg.duration}</p>
             </div>
           </div>
@@ -102,10 +104,10 @@ const PackageModal: React.FC<PackageModalProps> = ({ pkg, onClose, onBook }) => 
           <div>
             <h4 className="text-white font-bold mb-4 flex items-center">
               <span className="w-1.5 h-6 bg-indigo-500 rounded-full mr-3"></span>
-              Highlights & Inclusions
+              {t('packageModal.highlightsInclusions')}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {(pkg.highlights || pkg.inclusions || ['Luxury Accommodation', 'Private Transfers', 'Expert Guide', 'All Meals']).map((h, i) => (
+              {(pkg.highlights || pkg.inclusions || [t('packageModal.defaultHighlight1'), t('packageModal.defaultHighlight2'), t('packageModal.defaultHighlight3'), t('packageModal.defaultHighlight4')]).map((h, i) => (
                 <div key={i} className="flex items-center text-gray-400 text-xs">
                   <svg className="w-4 h-4 mr-2 text-teal-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
                   {h}
@@ -117,10 +119,10 @@ const PackageModal: React.FC<PackageModalProps> = ({ pkg, onClose, onBook }) => 
           <div>
             <h4 className="text-white font-bold mb-4 flex items-center">
               <span className="w-1.5 h-6 bg-purple-500 rounded-full mr-3"></span>
-              Experience Overview
+              {t('packageModal.experienceOverview')}
             </h4>
             <p className="text-gray-400 text-sm leading-relaxed mb-6 italic">
-              "Discover the breathtaking soul of {pkg.destination}. From local secrets to iconic landmarks, our experts have curated the perfect balance of luxury and adventure."
+              "{t('packageModal.experienceQuote', { destination: pkg.destination })}"
             </p>
             {pkg.itineraryDetails ? (
                <div className="space-y-4">
@@ -130,19 +132,19 @@ const PackageModal: React.FC<PackageModalProps> = ({ pkg, onClose, onBook }) => 
                      <div className="text-gray-300 text-xs font-medium">{day.title}</div>
                    </div>
                  ))}
-                 <p className="text-gray-500 text-[10px] italic">+ {pkg.itineraryDetails.length - 3} more days of adventure</p>
+                 <p className="text-gray-500 text-[10px] italic">{t('packageModal.moreDaysOfAdventure', { count: pkg.itineraryDetails.length - 3 })}</p>
                </div>
             ) : (
-              <p className="text-gray-500 text-[10px] italic">Detailed hour-by-hour itinerary available upon booking.</p>
+              <p className="text-gray-500 text-[10px] italic">{t('packageModal.detailedItineraryOnBooking')}</p>
             )}
           </div>
 
           <div className="pt-6 sticky bottom-0 bg-gray-950/80 backdrop-blur-md pb-2">
-            <button 
+            <button
               onClick={() => onBook(pkg)}
               className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] py-5 rounded-2xl text-white font-bold transition-all hover:scale-[1.02] shadow-xl"
             >
-              Secure This Journey Now
+              {t('packageModal.secureJourneyNow')}
             </button>
           </div>
         </div>

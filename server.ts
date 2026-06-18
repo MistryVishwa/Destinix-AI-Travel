@@ -14,6 +14,11 @@ import { initSocket } from "./server/collaboration/socket/socketHandler";
 
 dotenv.config();
 
+const connectionString = `${process.env.DATABASE_URL}`;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
 const app = express();
 const PORT = 3000;
 
@@ -57,8 +62,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const BOOKINGS_FILE = path.join(process.cwd(), "bookings.json");
-
 // Verify transporter connection on startup
 const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
 const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
@@ -75,48 +78,90 @@ if (smtpUser && smtpPass) {
   console.log("Running in Email Demo Mode. Set SMTP_USER and SMTP_PASS for real emails.");
 }
 
-// Helper to read/write bookings
-const getBookings = () => {
-  if (!fs.existsSync(BOOKINGS_FILE)) return [];
-  try {
-    const data = fs.readFileSync(BOOKINGS_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch (e) {
-    return [];
-  }
-};
-
-const saveBooking = (booking: any) => {
-  const bookings = getBookings();
-  bookings.push({ ...booking, id: Date.now().toString(), createdAt: new Date().toISOString() });
-  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2));
-};
-
 // API Routes
-app.post("/api/bookings", (req, res) => {
+app.post("/api/bookings", async (req, res) => {
   const bookingData = req.body;
   if (!bookingData.firstName || !bookingData.lastName || !bookingData.email) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-  const id = Date.now().toString();
-  const newBooking = { ...bookingData, id, status: 'Pending', createdAt: new Date().toISOString() };
-  const bookings = getBookings();
-  bookings.push(newBooking);
-  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2));
-  res.json({ success: true, message: "Booking details saved successfully", bookingId: id });
+  
+  try {
+    const user = await prisma.user.upsert({
+      where: { email: bookingData.email },
+      update: {
+        firstName: bookingData.firstName,
+        lastName: bookingData.lastName,
+        phone: bookingData.phone,
+        address: bookingData.address,
+        city: bookingData.city,
+        zipCode: bookingData.zipCode,
+      },
+      create: {
+        email: bookingData.email,
+        firstName: bookingData.firstName,
+        lastName: bookingData.lastName,
+        phone: bookingData.phone,
+        address: bookingData.address,
+        city: bookingData.city,
+        zipCode: bookingData.zipCode,
+      }
+    });
+
+    const newBooking = await prisma.booking.create({
+      data: {
+        userId: user.id,
+        packageId: bookingData.packageId,
+        totalAmount: bookingData.totalAmount || 0,
+        currency: bookingData.currency || 'INR',
+        numTravelers: bookingData.numTravelers || 1,
+        selectedVehicle: bookingData.selectedVehicle,
+        status: 'Pending',
+        flight: bookingData.flight ? {
+          create: {
+            airline: bookingData.flight.airline || "TBD",
+            flightNumber: bookingData.flight.flightNumber || "TBD",
+            price: bookingData.flight.price || 0,
+            departureTime: bookingData.flight.departureDate ? new Date(bookingData.flight.departureDate) : null,
+            arrivalTime: bookingData.flight.returnDate ? new Date(bookingData.flight.returnDate) : null,
+          }
+        } : undefined,
+        hotel: bookingData.hotel ? {
+          create: {
+            hotelName: bookingData.hotel.name || "TBD",
+            price: bookingData.hotel.price || 0,
+            roomType: bookingData.hotel.roomType || null,
+            checkIn: bookingData.hotel.checkIn ? new Date(bookingData.hotel.checkIn) : null,
+            checkOut: bookingData.hotel.checkOut ? new Date(bookingData.hotel.checkOut) : null,
+          }
+        } : undefined,
+        addons: bookingData.addons && Array.isArray(bookingData.addons) ? {
+          create: bookingData.addons.map((a: any) => ({
+            addonName: typeof a === 'string' ? a : (a.name || "Unknown Addon"),
+            price: typeof a === 'string' ? 0 : (a.price || 0)
+          }))
+        } : undefined,
+      }
+    });
+    res.json({ success: true, message: "Booking details saved successfully", bookingId: newBooking.id });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to save booking" });
+  }
 });
 
-app.post("/api/update-booking", (req, res) => {
+app.post("/api/update-booking", async (req, res) => {
   const { id, updates } = req.body;
   if (!id || !updates) return res.status(400).json({ error: "ID and updates are required" });
 
-  const bookings = getBookings();
-  const index = bookings.findIndex((b: any) => b.id === id);
-  if (index === -1) return res.status(404).json({ error: "Booking not found" });
-
-  bookings[index] = { ...bookings[index], ...updates };
-  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2));
-  res.json({ success: true });
+  try {
+    await prisma.booking.update({
+      where: { id },
+      data: updates
+    });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(404).json({ error: "Booking not found or update failed" });
+  }
 });
 
 app.post("/api/send-otp", async (req, res) => {
@@ -206,13 +251,36 @@ app.post("/api/verify-otp", (req, res) => {
   }
 });
 
-app.get("/api/my-bookings", (req, res) => {
+app.get("/api/my-bookings", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: "Email is required" });
 
-  const bookings = getBookings();
-  const userBookings = bookings.filter((b: any) => b.email.toLowerCase() === (email as string).toLowerCase());
-  res.json(userBookings);
+  try {
+    const userBookings = await prisma.booking.findMany({
+      where: { user: { email: { equals: email as string, mode: 'insensitive' } } },
+      include: {
+        user: true,
+        package: true,
+        flight: true,
+        hotel: true,
+        addons: true
+      }
+    });
+
+    const mappedBookings = userBookings.map(b => ({
+      ...b,
+      email: b.user.email,
+      firstName: b.user.firstName,
+      lastName: b.user.lastName,
+      packageTitle: b.package.title,
+      packageImage: b.package.image
+    }));
+    
+    res.json(mappedBookings);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  }
 });
 
 app.post("/api/send-confirmation", async (req, res) => {
@@ -396,6 +464,140 @@ app.post("/api/verify-payment", (req, res) => {
     res.json({ success: true, message: "Payment verified successfully" });
   } else {
     res.status(400).json({ error: "Invalid signature" });
+  }
+});
+
+app.get("/api/reviews/:packageId", async (req, res) => {
+  const { packageId } = req.params;
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { packageId },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(reviews);
+  } catch (error: any) {
+    console.error("Failed to fetch reviews:", error);
+    res.status(500).json({ error: "Failed to fetch reviews" });
+  }
+});
+
+app.post("/api/reviews", async (req, res) => {
+  const { packageId, email, rating, comment } = req.body;
+  if (!packageId || !email || !rating) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        packageId,
+        user: { email: { equals: email, mode: 'insensitive' } },
+        status: 'Confirmed'
+      }
+    });
+
+    if (!booking) {
+      return res.status(403).json({ error: "You must have a confirmed booking for this package to leave a review." });
+    }
+
+    const review = await prisma.review.create({
+      data: {
+        packageId,
+        userId: booking.userId,
+        rating,
+        comment
+      },
+      include: { user: true }
+    });
+
+    res.json(review);
+  } catch (error: any) {
+    console.error("Failed to submit review:", error);
+    res.status(500).json({ error: "Failed to submit review" });
+  }
+});
+
+const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'stay', 'activities', 'other'];
+
+app.post("/api/expenses", async (req, res) => {
+  const { userId, tripLabel, category, amount, currency, note } = req.body;
+
+  if (!userId || !tripLabel || !category || typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({
+      error: "Invalid request",
+      message: "userId, tripLabel, category, and a positive amount are required.",
+    });
+  }
+
+  if (!VALID_EXPENSE_CATEGORIES.includes(category)) {
+    return res.status(400).json({
+      error: "Invalid request",
+      message: `category must be one of: ${VALID_EXPENSE_CATEGORIES.join(', ')}`,
+    });
+  }
+
+  const currencyCode = (currency || 'INR').toUpperCase();
+
+  let amountINR: number;
+  try {
+    amountINR = await convertToINR(amount, currencyCode);
+  } catch (error: any) {
+    console.error("Currency conversion failed:", error);
+    return res.status(502).json({
+      error: "Conversion failed",
+      message: "Could not determine an INR conversion rate. Please try again.",
+    });
+  }
+
+  try {
+    const expense = await prisma.expense.create({
+      data: {
+        userId,
+        tripLabel,
+        category,
+        amount,
+        currency: currencyCode,
+        amountINR,
+        note: note || null,
+      },
+    });
+    res.status(201).json({ success: true, data: expense });
+  } catch (error: any) {
+    console.error("Create expense error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to create expense." });
+  }
+});
+
+app.get("/api/expenses/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const expenses = await prisma.expense.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: expenses });
+  } catch (error: any) {
+    console.error("Fetch expenses error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to fetch expenses." });
+  }
+});
+
+app.delete("/api/expenses/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const existing = await prisma.expense.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Not Found", message: "Expense not found." });
+    }
+
+    await prisma.expense.delete({ where: { id } });
+    res.json({ success: true, message: "Expense deleted." });
+  } catch (error: any) {
+    console.error("Delete expense error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to delete expense." });
   }
 });
 

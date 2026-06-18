@@ -11,6 +11,26 @@ interface NavbarProps {
   onLogout: () => void;
 }
 
+const LanguageSwitcher: React.FC = () => {
+  const { i18n } = useTranslation();
+
+  const toggleLanguage = () => {
+    i18n.changeLanguage(i18n.language === 'en' ? 'hi' : 'en');
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={toggleLanguage}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-sm text-gray-200 hover:bg-white/10 transition-colors"
+      aria-label="Toggle language"
+    >
+      <span>🌐</span>
+      <span className="font-medium">{i18n.language === 'hi' ? 'हिं' : 'EN'}</span>
+    </button>
+  );
+};
+
 const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSignInClick, onLogout }) => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,11 +46,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSi
   }, []);
 
   const navLinks = [
-    { id: Page.Home, label: 'Home' },
-    { id: Page.Planner, label: 'AI Planner' },
-    { id: Page.Packages, label: 'Packages' },
-    { id: Page.About, label: 'About' },
-    { id: Page.Contact, label: 'Contact' }
+    { id: Page.Home, label: t('navbar.home') },
+    { id: Page.Planner, label: t('navbar.planner') },
+    { id: Page.Packages, label: t('navbar.packages') },
+    { id: Page.About, label: t('navbar.about') },
+    { id: Page.Contact, label: t('navbar.contact') }
   ];
 
   const handlePageChange = (page: Page) => {
@@ -109,7 +129,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSi
                           onClick={() => handlePageChange(Page.Profile)}
                           className="w-full text-left px-5 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center"
                         >
-                          <span className="mr-3">👤</span> My Dashboard
+                          <span className="mr-3">👤</span> {t('navbar.myDashboard')}
                         </button>
                         <button 
                           onClick={() => { navigate('/groups'); setIsUserMenuOpen(false); }}
@@ -121,33 +141,35 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSi
                           onClick={() => handlePageChange(Page.Profile)}
                           className="w-full text-left px-5 py-3 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center"
                         >
-                          <span className="mr-3">⚙️</span> Settings
+                          <span className="mr-3">⚙️</span> {t('navbar.settings')}
                         </button>
                         <div className="h-px bg-white/5 mx-2 my-1" />
-                        <button 
+                        <button
                           onClick={onLogout}
                           className="w-full text-left px-5 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center"
                         >
-                          <span className="mr-3">🚪</span> Sign Out
+                          <span className="mr-3">🚪</span> {t('navbar.signOut')}
                         </button>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <button 
+                  <button
                     onClick={onSignInClick}
                     className="text-sm font-medium text-gray-300 hover:text-white transition-all px-3 py-2 rounded-full hover:bg-white/5"
                   >
-                    Sign In
+                    {t('navbar.signIn')}
                   </button>
                 )}
               </div>
 
-              <button 
+              <LanguageSwitcher />
+
+              <button
                 onClick={() => handlePageChange(Page.Planner)}
                 className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-bold transition-all hover:scale-105"
               >
-                Plan a Trip
+                {t('navbar.planATrip')}
               </button>
 
               {/* Hamburger Menu Icon */}
@@ -227,15 +249,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSi
                     onClick={() => { onLogout(); setIsMenuOpen(false); }}
                     className="w-full py-4 text-center bg-white/5 rounded-2xl text-gray-300 font-bold hover:bg-white/10"
                   >
-                    Sign Out
+                    {t('navbar.signOut')}
                   </button>
                 </div>
               ) : (
-                <button 
+                <button
                   onClick={() => { onSignInClick(); setIsMenuOpen(false); }}
                   className="w-full py-4 text-center bg-indigo-600 rounded-2xl text-white font-bold hover:bg-indigo-500"
                 >
-                  Sign In / Register
+                  {t('navbar.signInRegister')}
                 </button>
               )}
             </div>

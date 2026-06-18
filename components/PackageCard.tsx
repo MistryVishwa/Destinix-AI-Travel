@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { TravelPackage } from '../types';
 import { formatCurrency } from '../utils/currency';
 
@@ -14,6 +15,7 @@ interface PackageCardProps {
 }
 
 const PackageCard: React.FC<PackageCardProps> = ({ pkg, isAlertSet, isSaved, onToggleAlert, onToggleSave, onViewDetails }) => {
+  const { t } = useTranslation();
   const [imgSrc, setImgSrc] = React.useState<string>(
     pkg.image && pkg.image.trim() !== "" 
       ? pkg.image 
@@ -119,7 +121,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, isAlertSet, isSaved, onT
           </div>
           <div className="bg-teal-500/90 backdrop-blur-md px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider text-white flex items-center">
             <svg className="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-            Insurance Incl.
+            {t('packageCard.insuranceIncluded')}
           </div>
         </div>
 
@@ -184,7 +186,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, isAlertSet, isSaved, onT
               <span className="text-2xl font-bold text-white tracking-tight">
                 {formatCurrency(pkg.price, pkg.currency, true)}
               </span>
-              <span className="text-gray-500 text-[10px] ml-1 font-medium">/ explorer</span>
+              <span className="text-gray-500 text-[10px] ml-1 font-medium">{t('packageCard.perExplorer')}</span>
             </div>
           </div>
           
@@ -194,7 +196,7 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, isAlertSet, isSaved, onT
             onClick={() => onViewDetails?.(pkg)}
             className="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl text-sm font-bold text-white transition-all flex items-center justify-center group/btn shadow-lg shadow-indigo-600/20"
           >
-            View Details
+            {t('packageCard.viewDetails')}
             <svg className="w-4 h-4 ml-2 transform group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>

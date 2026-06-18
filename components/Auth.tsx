@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { register, login, forgotPassword } from '../services/authService';
 import { User } from '../types';
 
@@ -11,6 +12,7 @@ interface AuthProps {
 type Mode = 'signin' | 'signup' | 'forgot';
 
 const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onCancel }) => {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,18 +29,18 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onCancel }) => {
 
     try {
       if (mode === 'signup') {
-        if (!name || !email || !password) throw new Error('Please fill all fields');
-        if (password.length < 6) throw new Error('Password must be at least 6 characters');
+        if (!name || !email || !password) throw new Error(t('auth.errorFillAllFields'));
+        if (password.length < 6) throw new Error(t('auth.errorPasswordMinLength'));
         const user = await register(name, email, password);
         onAuthSuccess(user);
       } else if (mode === 'signin') {
-        if (!email || !password) throw new Error('Please fill all fields');
+        if (!email || !password) throw new Error(t('auth.errorFillAllFields'));
         const user = await login(email, password);
         onAuthSuccess(user);
       } else {
-        if (!email) throw new Error('Please enter your email');
+        if (!email) throw new Error(t('auth.errorEnterEmail'));
         await forgotPassword(email);
-        setMessage('Reset link sent! Check your inbox.');
+        setMessage(t('auth.resetLinkSent'));
         setTimeout(() => setMode('signin'), 3000);
       }
     } catch (err: any) {
@@ -59,7 +61,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onCancel }) => {
         <div className="p-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-serif font-bold text-white">
-              {mode === 'signin' ? 'Welcome Back' : mode === 'signup' ? 'Join Destinix' : 'Reset Password'}
+              {mode === 'signin' ? t('auth.welcomeBack') : mode === 'signup' ? t('auth.joinDestinix') : t('auth.resetPassword')}
             </h2>
             <button onClick={onCancel} className="text-gray-500 hover:text-white transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +85,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onCancel }) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-gray-400 mb-1">{t('auth.fullName')}</label>
                 <input
                   type="text"
                   required
@@ -96,7 +98,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onCancel }) => {
             )}
             
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
+              <label className="block text-sm font-medium text-gray-400 mb-1">{t('auth.emailAddress')}</label>
               <input
                 type="email"
                 required
@@ -109,7 +111,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onCancel }) => {
 
             {mode !== 'forgot' && (
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Password</label>
+                <label className="block text-sm font-medium text-gray-400 mb-1">{t('auth.password')}</label>
                 <input
                   type="password"
                   required
@@ -128,7 +130,7 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onCancel }) => {
                   onClick={() => setMode('forgot')}
                   className="text-sm text-indigo-400 hover:text-indigo-300"
                 >
-                  Forgot Password?
+                  {t('auth.forgotPassword')}
                 </button>
               </div>
             )}
@@ -144,19 +146,19 @@ const Auth: React.FC<AuthProps> = ({ onAuthSuccess, onCancel }) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Processing...
+                  {t('auth.processing')}
                 </span>
               ) : (
-                mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Link'
+                mode === 'signin' ? t('auth.signIn') : mode === 'signup' ? t('auth.createAccount') : t('auth.sendResetLink')
               )}
             </button>
           </form>
 
           <div className="mt-8 text-center text-gray-500 text-sm">
             {mode === 'signin' ? (
-              <p>Don't have an account? <button onClick={() => setMode('signup')} className="text-indigo-400 font-bold hover:underline">Sign Up</button></p>
+              <p>{t('auth.dontHaveAccount')} <button onClick={() => setMode('signup')} className="text-indigo-400 font-bold hover:underline">{t('auth.signUp')}</button></p>
             ) : (
-              <p>Already have an account? <button onClick={() => setMode('signin')} className="text-indigo-400 font-bold hover:underline">Sign In</button></p>
+              <p>{t('auth.alreadyHaveAccount')} <button onClick={() => setMode('signin')} className="text-indigo-400 font-bold hover:underline">{t('auth.signIn')}</button></p>
             )}
           </div>
         </div>

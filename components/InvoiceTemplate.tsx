@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { CURRENCY_SYMBOLS } from "../utils/currency";
 import { Plane } from "lucide-react";
 
@@ -20,6 +21,7 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
   pricing,
   bookingId
 }) => {
+  const { t } = useTranslation();
   if (!paymentData || !pkg) return null;
 
   // Currency Symbol
@@ -34,14 +36,14 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
   // ✅ Dynamic Travel Mode Logic
   const travelMode =
     selectedVehicle === "car"
-      ? "Private Car Transfer"
+      ? t('invoice.travelModeCar')
       : selectedVehicle === "bike"
-      ? "Bike Rental"
+      ? t('invoice.travelModeBike')
       : selectedVehicle === "bus"
-      ? "Luxury Bus"
+      ? t('invoice.travelModeBus')
       : selectedVehicle === "flight"
-      ? `Flight from ${userDetails?.departureCity || "N/A"}`
-      : "Standard Transfer";
+      ? t('invoice.travelModeFlight', { city: userDetails?.departureCity || "N/A" })
+      : t('invoice.travelModeStandard');
 
   return (
     <div
@@ -85,10 +87,10 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
 
           <div>
             <h1 style={{ margin: 0, fontSize: "30px" }}>
-              Destinix Travel
+              {t('invoice.companyName')}
             </h1>
             <p style={{ margin: 0, fontSize: "14px", opacity: 0.8 }}>
-              Curated journeys, unforgettable memories.
+              {t('invoice.tagline')}
             </p>
           </div>
         </div>
@@ -96,7 +98,7 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
         {/* Invoice Title */}
         <div style={{ textAlign: "right" }}>
           <h2 style={{ margin: 0, fontSize: "40px" }}>
-            INVOICE
+            {t('invoice.invoiceTitle')}
           </h2>
           <p
             style={{
@@ -106,7 +108,7 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
               fontWeight: 600
             }}
           >
-            Payment Confirmed
+            {t('invoice.paymentConfirmed')}
           </p>
         </div>
       </header>
@@ -122,16 +124,16 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
         }}
       >
         {[
-          { label: "Booking ID", value: `#${bookingId}` },
+          { label: t('invoice.bookingId'), value: `#${bookingId}` },
           {
-            label: "Invoice Date",
+            label: t('invoice.invoiceDate'),
             value: new Date(paymentData.date).toLocaleDateString(
               "en-US",
               { day: "numeric", month: "short", year: "numeric" }
             )
           },
-          { label: "Package Type", value: pkg.type },
-          { label: "Status", value: "Active" }
+          { label: t('invoice.packageType'), value: pkg.type },
+          { label: t('invoice.status'), value: t('invoice.statusActive') }
         ].map((item, i) => (
           <div key={i} style={{ width: "23%" }}>
             <p
@@ -179,7 +181,7 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
           {/* Trip Details */}
           <div style={{ width: "58%" }}>
             <h3 style={{ fontSize: "20px", fontWeight: 700 }}>
-              Trip Details
+              {t('invoice.tripDetails')}
             </h3>
 
             <div
@@ -190,9 +192,9 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
                 gap: "28px"
               }}
             >
-              <Detail label="Destination" value={pkg.destination} />
+              <Detail label={t('invoice.destination')} value={pkg.destination} />
               <Detail
-                label="Travel Dates"
+                label={t('invoice.travelDates')}
                 value={`${new Date(paymentData.date).toLocaleDateString(
                   "en-US",
                   { day: "numeric", month: "short" }
@@ -206,18 +208,18 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
                 })}`}
               />
               <Detail
-                label="Duration"
-                value={pkg.duration || "8 Days"}
+                label={t('invoice.duration')}
+                value={pkg.duration || t('invoice.defaultDuration')}
               />
               <Detail
-                label="Travel Mode"
+                label={t('invoice.travelMode')}
                 value={travelMode}
               />
               <Detail
-                label="Accommodation"
+                label={t('invoice.accommodation')}
                 value={
                   pkg.accommodation ||
-                  "Ocean View Water Villa"
+                  t('invoice.defaultAccommodation')
                 }
                 full
               />
@@ -227,7 +229,7 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
 
         {/* ================= PAYMENT SUMMARY ================= */}
         <h3 style={{ fontSize: "20px", fontWeight: 700 }}>
-          Payment Summary
+          {t('invoice.paymentSummary')}
         </h3>
 
         <div
@@ -239,20 +241,20 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
           }}
         >
           <PriceRow
-            label="Base Package"
+            label={t('invoice.basePackage')}
             value={`${currencySymbol}${pricing.base.toLocaleString(
               "en-IN"
             )}`}
           />
           <PriceRow
-            label="Taxes & Fees"
+            label={t('invoice.taxesFees')}
             value={`${currencySymbol}${(
               pricing.taxes + pricing.service
             ).toLocaleString("en-IN")}`}
           />
           {pricing.vehicleCharge > 0 && (
             <PriceRow
-              label="Vehicle Charge"
+              label={t('invoice.vehicleCharge')}
               value={`${currencySymbol}${pricing.vehicleCharge.toLocaleString(
                 "en-IN"
               )}`}
@@ -269,7 +271,7 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
             }}
           >
             <span style={{ fontSize: "18px", fontWeight: 700 }}>
-              Total Paid
+              {t('invoice.totalPaid')}
             </span>
             <span
               style={{
@@ -294,7 +296,7 @@ const InvoiceTemplate: React.FC<InvoiceTemplateProps> = ({
           color: "#64748b"
         }}
       >
-        © 2026 Destinix Travel
+        {t('invoice.footer')}
       </footer>
     </div>
   );

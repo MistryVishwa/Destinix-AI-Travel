@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 const PrivacyPolicy: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="bg-gray-950 text-white min-h-screen pt-24">
 
@@ -21,10 +23,10 @@ const PrivacyPolicy: React.FC = () => {
           className="relative z-10 text-center px-4"
         >
           <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
-            Privacy Policy
+            {t('privacyPolicy.title')}
           </h1>
           <p className="text-gray-300 max-w-2xl mx-auto">
-            We respect your privacy and are committed to protecting your personal information.
+            {t('privacyPolicy.subtitle')}
           </p>
         </motion.div>
       </div>
@@ -33,43 +35,37 @@ const PrivacyPolicy: React.FC = () => {
       <div className="max-w-5xl mx-auto px-6 py-20 space-y-14">
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">1. Information We Collect</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('privacyPolicy.section1Title')}</h2>
           <p className="text-gray-400 leading-relaxed">
-            We collect information that you provide directly to us, including your name, 
-            email address, travel preferences, booking details, and payment information.
+            {t('privacyPolicy.section1Body')}
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">2. How We Use Your Information</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('privacyPolicy.section2Title')}</h2>
           <p className="text-gray-400 leading-relaxed">
-            Your data helps us personalize recommendations, process bookings, 
-            provide customer support, and improve our AI-powered travel services.
+            {t('privacyPolicy.section2Body')}
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">3. Data Security</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('privacyPolicy.section3Title')}</h2>
           <p className="text-gray-400 leading-relaxed">
-            We implement strong technical and organizational security measures 
-            to protect your personal data against unauthorized access or misuse.
+            {t('privacyPolicy.section3Body')}
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">4. Third-Party Services</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('privacyPolicy.section4Title')}</h2>
           <p className="text-gray-400 leading-relaxed">
-            We may use trusted third-party services such as payment gateways 
-            and analytics providers. These services operate under their own 
-            privacy policies.
+            {t('privacyPolicy.section4Body')}
           </p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-4">5. Your Rights</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('privacyPolicy.section5Title')}</h2>
           <p className="text-gray-400 leading-relaxed">
-            You have the right to access, update, or delete your personal data. 
-            You may contact us anytime for privacy-related requests.
+            {t('privacyPolicy.section5Body')}
           </p>
         </section>
 

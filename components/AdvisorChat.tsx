@@ -1,24 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { chatWithAdvisor } from '../services/geminiService';
 import { ChatMessage } from '../types';
 import { useNavigate } from 'react-router-dom';
 
 const AdvisorChat: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content:
-        `🌍 Welcome to Destinix AI
-
-Looking for travel inspiration or need help with a booking?
-
-You can ask about:
-• Honeymoon trips
-• Budget travel
-• Weekend getaways
-• International destinations`,
+      content: t('advisor.welcomeMessage'),
       timestamp: new Date()
     }
   ]);
@@ -64,14 +57,14 @@ You can ask about:
 
     return (
       <div className="mt-3 text-sm space-y-1">
-        <div className="font-semibold text-indigo-400">Explore More:</div>
+        <div className="font-semibold text-indigo-400">{t('advisor.exploreMore')}</div>
 
         {hasPackage && (
           <button
             onClick={() => navigate(`/packages/${slug}`)}
             className="block text-indigo-300 hover:underline"
           >
-            • View Packages →
+            • {t('advisor.viewPackages')}
           </button>
         )}
 
@@ -79,7 +72,7 @@ You can ask about:
           onClick={() => navigate(`/destinations/${slug}`)}
           className="block text-indigo-300 hover:underline"
         >
-          • Destination Guide →
+          • {t('advisor.destinationGuide')}
         </button>
       </div>
     );
@@ -104,7 +97,8 @@ You can ask about:
     try {
       let response = await chatWithAdvisor(
         input,
-        messages.map(m => ({ role: m.role, content: m.content }))
+        messages.map(m => ({ role: m.role, content: m.content })),
+        i18n.language
       );
 
       /* CLEAN MARKDOWN */
@@ -119,7 +113,7 @@ You can ask about:
         ...prev,
         {
           role: 'assistant',
-          content: response || "Here’s your travel recommendation.",
+          content: response || t('advisor.defaultRecommendation'),
           timestamp: new Date(),
           destination: detectedDestination
         } as any
@@ -130,7 +124,7 @@ You can ask about:
         ...prev,
         {
           role: 'assistant',
-          content: "⚠ I'm having trouble connecting right now. Please try again.",
+          content: t('advisor.connectionError'),
           timestamp: new Date()
         }
       ]);
@@ -147,7 +141,7 @@ You can ask about:
 
           {/* HEADER */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-5 flex items-center justify-between">
-            <h3 className="text-white font-bold">Travel Advisor</h3>
+            <h3 className="text-white font-bold">{t('advisor.title')}</h3>
             <button onClick={() => setIsOpen(false)} className="text-white/70 hover:text-white">✕</button>
           </div>
 
@@ -186,7 +180,7 @@ You can ask about:
 
               <input
                 type="text"
-                placeholder="Ask me anything..."
+                placeholder={t('advisor.inputPlaceholder')}
                 className="bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus:border-0 focus-visible:outline-none focus-visible:ring-0 text-white text-sm w-full shadow-none"
                 style={{ boxShadow: "none" }}
                 value={input}

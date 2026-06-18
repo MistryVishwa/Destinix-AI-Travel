@@ -38,7 +38,7 @@ Destinix is built to feel highly premium:
 * **Frontend Framework**: React 19 (TypeScript, React Router DOM v7)
 * **Design & Styling**: Tailwind CSS, Motion (Framer Motion), Lucide Icons
 * **Backend Runtime**: Node.js, Express (using `tsx` for TypeScript execution)
-* **Database & Services**: Firebase Client SDK (Authentication, Firestore integration)
+* **Database & Services**: Firebase Client SDK (Authentication), PostgreSQL via Prisma ORM (Bookings)
 * **Integrations**: Google Gemini Developer API (`@google/genai`), Razorpay SDK, Nodemailer (SMTP configuration)
 
 ---
@@ -61,6 +61,7 @@ Destinix-AI-Travel-main/
 ├── services/              # External API connectors
 │   ├── authService.ts     # Firebase auth queries
 │   └── geminiService.ts   # Gemini generation endpoints
+├── prisma/                # Database schema and Prisma configuration
 ├── utils/                 # General helpers
 ├── types.ts               # Shared TypeScript schemas
 ├── constants.tsx          # Package database & category structures
@@ -81,6 +82,8 @@ Create a `.env` file at the root of the project (you can use `.env.example` as a
 
 | Variable | Description | Example / Location |
 |---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (Transaction pooler) | `postgresql://postgres...:6543/postgres` |
+| `DIRECT_URL` | PostgreSQL direct connection string (Session pooler) | `postgresql://postgres...:5432/postgres` |
 | `GEMINI_API_KEY` | Google AI Studio Key | [Get API Key](https://aistudio.google.com/) |
 | `VITE_FIREBASE_API_KEY` | Firebase API Client Key | Firebase console -> Project Settings |
 | `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Domain | `<project-name>.firebaseapp.com` |
@@ -111,14 +114,21 @@ cd Destinix-AI-Travel
 npm install
 ```
 
-### 4. Run the Project
+### 4. Setup the Database
+Generate the Prisma Client and push the schema to your PostgreSQL database:
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+### 5. Run the Project
 Start both the Express backend server and the Vite frontend HMR server simultaneously:
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 5. Build for Production
+### 6. Build for Production
 To test the built bundle locally:
 ```bash
 npm run build

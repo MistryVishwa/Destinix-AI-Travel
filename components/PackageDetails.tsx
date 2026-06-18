@@ -1,10 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TravelPackage } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, MapPin, Calendar, Wallet, Sparkles, ShieldCheck, Play, Info, CheckCircle2, Hotel, Utensils, Plane, Car, Camera, UserCheck, XCircle, Loader2, Check, X } from 'lucide-react';
+import { ChevronDown, MapPin, Calendar, Wallet, Sparkles, ShieldCheck, Play, Info, CheckCircle2, Hotel, Utensils, Plane, Car, Camera, UserCheck, XCircle, Loader2, Check, X, Star, MessageSquare, Share2 } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
+import ShareModal from './ShareModal';
 
 const DESTINATION_VIDEOS: Record<string, string[]> = {
   'goa': [
@@ -85,10 +87,18 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
   onBook,
   onRequireAuth
 }) => {
-
-const [images, setImages] = useState<string[]>([]);
+  const { t } = useTranslation();
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
 const [activeImg, setActiveImg] = useState<string | null>(pkg.image || (Array.isArray(pkg.gallery) && pkg.gallery.length > 0 ? pkg.gallery[0] : null));
 const [loadingImages, setLoadingImages] = useState(false);
+
+const [reviews, setReviews] = useState<any[]>([]);
+const [rating, setRating] = useState(5);
+const [comment, setComment] = useState('');
+const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+const [reviewError, setReviewError] = useState<string | null>(null);
+const [reviewSuccess, setReviewSuccess] = useState(false);
 
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
@@ -179,6 +189,64 @@ useEffect(() => {
   fetchImages();
 }, [pkg.title]);
 
+useEffect(() => {
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`/api/reviews/${pkg.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  fetchReviews();
+}, [pkg.id]);
+
+const handleSubmitReview = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setReviewError(null);
+  setReviewSuccess(false);
+  setIsSubmittingReview(true);
+  
+  const currentUser = localStorage.getItem('destinix_current_user');
+  if (!currentUser) {
+    setReviewError("Please log in to leave a review.");
+    setIsSubmittingReview(false);
+    return;
+  }
+  
+  const { email } = JSON.parse(currentUser);
+
+  try {
+    const res = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        packageId: pkg.id,
+        email,
+        rating,
+        comment
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to submit review");
+    }
+
+    setReviews([data, ...reviews]);
+    setComment('');
+    setRating(5);
+    setReviewSuccess(true);
+  } catch (error: any) {
+    setReviewError(error.message);
+  } finally {
+    setIsSubmittingReview(false);
+  }
+};
+
   /* =============================== */
 
   const [openDay, setOpenDay] = useState<number | null>(1);
@@ -198,13 +266,13 @@ useEffect(() => {
   };
 
   const detailedInclusions = [
-    { label: 'Hotel Accommodation', value: '4-Star / 5-Star Premium Stay', icon: 'Hotel' },
-    { label: 'Meals Included', value: 'Daily Breakfast & Dinner', icon: 'Meals' },
-    { label: 'Airport Transfers', value: 'Private AC Vehicle', icon: 'Transfer' },
-    { label: 'Local Transport', value: 'Dedicated Sightseeing Cab', icon: 'Transfer' },
-    { label: 'Sightseeing', value: 'All Major Points Covered', icon: 'Sightseeing' },
-    { label: 'Professional Guide', value: 'Government Approved Guide', icon: 'Guide' },
-    { label: 'Adventure Activities', value: pkg.type === 'Adventure' ? 'Included as per Itinerary' : 'Optional Add-on', icon: 'Activities' }
+    { label: t('packageDetails.inclusionHotel'), value: t('packageDetails.inclusionHotelValue'), icon: 'Hotel' },
+    { label: t('packageDetails.inclusionMeals'), value: t('packageDetails.inclusionMealsValue'), icon: 'Meals' },
+    { label: t('packageDetails.inclusionTransfers'), value: t('packageDetails.inclusionTransfersValue'), icon: 'Transfer' },
+    { label: t('packageDetails.inclusionLocalTransport'), value: t('packageDetails.inclusionLocalTransportValue'), icon: 'Transfer' },
+    { label: t('packageDetails.inclusionSightseeing'), value: t('packageDetails.inclusionSightseeingValue'), icon: 'Sightseeing' },
+    { label: t('packageDetails.inclusionGuide'), value: t('packageDetails.inclusionGuideValue'), icon: 'Guide' },
+    { label: t('packageDetails.inclusionActivities'), value: pkg.type === 'Adventure' ? t('packageDetails.inclusionActivitiesIncluded') : t('packageDetails.inclusionActivitiesOptional'), icon: 'Activities' }
   ];
 
   const priceBreakdown = {
@@ -235,24 +303,34 @@ useEffect(() => {
             <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Explorations
+            {t('packageDetails.backToExplorations')}
           </button>
           
-          {onToggleSave && (
+          <div className="flex items-center space-x-4">
             <button 
-              onClick={() => onToggleSave(pkg)}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold transition-all border backdrop-blur-md ${
-                isSaved 
-                ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20' 
-                : 'bg-white/5 border-white/10 text-gray-400 hover:border-red-500/50 hover:text-red-400'
-              }`}
+              onClick={() => setIsShareOpen(true)}
+              className="flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold transition-all border backdrop-blur-md bg-white/5 border-white/10 text-gray-400 hover:border-indigo-500/50 hover:text-indigo-400"
             >
-              <svg className="w-5 h-5" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span>{isSaved ? 'Saved' : 'Save Package'}</span>
+              <Share2 className="w-5 h-5" />
+              <span>Share</span>
             </button>
-          )}
+
+            {onToggleSave && (
+              <button
+                onClick={() => onToggleSave(pkg)}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-2xl font-bold transition-all border backdrop-blur-md ${
+                  isSaved
+                  ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/20'
+                  : 'bg-white/5 border-white/10 text-gray-400 hover:border-red-500/50 hover:text-red-400'
+                }`}
+              >
+                <svg className="w-5 h-5" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span>{isSaved ? t('packageDetails.saved') : t('packageDetails.savePackage')}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -302,16 +380,16 @@ useEffect(() => {
 
             {/* Description Section */}
             <section className="bg-white/5 p-8 md:p-12 rounded-[40px] border border-white/10">
-              <h2 className="text-3xl font-serif font-bold text-white mb-6">About this journey</h2>
+              <h2 className="text-3xl font-serif font-bold text-white mb-6">{t('packageDetails.aboutJourney')}</h2>
               <p className="text-xl text-gray-400 leading-relaxed mb-10">{pkg.description}</p>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex items-center space-x-4 p-6 bg-white/5 rounded-3xl border border-white/5">
                   <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
                     <Calendar className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Duration</p>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('packageDetails.duration')}</p>
                     <p className="text-lg text-white font-bold">{pkg.duration}</p>
                   </div>
                 </div>
@@ -320,7 +398,7 @@ useEffect(() => {
                     <Wallet className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Starting Price</p>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('packageDetails.startingPrice')}</p>
                     <p className="text-lg text-white font-bold">{formatCurrency(pkg.price, pkg.currency)}</p>
                   </div>
                 </div>
@@ -336,7 +414,7 @@ useEffect(() => {
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                      Location
+                      {t('packageDetails.location')}
                     </p>
                     <p className="text-lg text-white font-bold">
                       {pkg.destination}
@@ -361,7 +439,7 @@ useEffect(() => {
             {/* Itinerary Section */}
             {pkg.itineraryDetails && (
               <section>
-                <h2 className="text-3xl font-serif font-bold text-white mb-8">Detailed Itinerary</h2>
+                <h2 className="text-3xl font-serif font-bold text-white mb-8">{t('packageDetails.detailedItinerary')}</h2>
                 <div className="space-y-4">
                   {pkg.itineraryDetails.map((day) => (
                     <div key={day.day} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
@@ -405,7 +483,7 @@ useEffect(() => {
               <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-[40px] p-8 shadow-2xl backdrop-blur-xl">
                 <h3 className="text-white font-bold text-xl mb-8 flex items-center">
                   <Info className="w-5 h-5 mr-3 text-indigo-400" />
-                  Trip Overview
+                  {t('packageDetails.tripOverview')}
                 </h3>
                 <div className="space-y-6">
                   <div className="flex items-center space-x-4">
@@ -413,7 +491,7 @@ useEffect(() => {
                       <MapPin className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Destination</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('packageDetails.destination')}</p>
                       <p className="text-base text-white font-bold">{pkg.destination}</p>
                     </div>
                   </div>
@@ -422,8 +500,8 @@ useEffect(() => {
                       <Sparkles className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Best Season</p>
-                      <p className="text-base text-white font-bold">Oct - March</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('packageDetails.bestSeason')}</p>
+                      <p className="text-base text-white font-bold">{t('packageDetails.bestSeasonValue')}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -431,7 +509,7 @@ useEffect(() => {
                       <ShieldCheck className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Travel Type</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('packageDetails.travelType')}</p>
                       <p className="text-base text-white font-bold">{pkg.type}</p>
                     </div>
                   </div>
@@ -453,7 +531,7 @@ useEffect(() => {
                     }}
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 py-5 rounded-2xl text-white font-bold text-lg"
                   >
-                    Secure Your Trip
+                    {t('packageDetails.secureYourTrip')}
                   </motion.button>
                 </div>
               </div>
@@ -463,31 +541,31 @@ useEffect(() => {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-600/20 transition-all" />
                 <h4 className="text-white font-bold mb-8 flex items-center text-lg">
                   <Wallet className="w-5 h-5 mr-3 text-emerald-400" />
-                  Price Breakdown
+                  {t('packageDetails.priceBreakdown')}
                 </h4>
                 <div className="space-y-5 mb-10">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Base Price</span>
+                    <span className="text-gray-500">{t('packageDetails.basePrice')}</span>
                     <span className="text-white font-bold">{formatCurrency(priceBreakdown.base, pkg.currency)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Taxes & Fees</span>
+                    <span className="text-gray-500">{t('packageDetails.taxesFees')}</span>
                     <span className="text-white font-bold">{formatCurrency(priceBreakdown.taxes, pkg.currency)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Service Charge</span>
+                    <span className="text-gray-500">{t('packageDetails.serviceCharge')}</span>
                     <span className="text-white font-bold">{formatCurrency(priceBreakdown.service, pkg.currency)}</span>
                   </div>
                   <div className="pt-6 border-t border-white/10 flex justify-between items-end">
                     <div>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Amount</p>
-                      <p className="text-xs text-emerald-400 font-medium">All-Inclusive</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('packageDetails.totalAmount')}</p>
+                      <p className="text-xs text-emerald-400 font-medium">{t('packageDetails.allInclusive')}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-3xl font-bold text-white leading-none">{formatCurrency(pkg.price, pkg.currency)}</p>
                       {pkg.currency !== 'INR' && (
                         <p className="text-[10px] text-indigo-400 font-bold mt-2">
-                          (₹{Math.round(pkg.price * 83.2).toLocaleString()} approx.)
+                          {t('packageDetails.approx', { amount: Math.round(pkg.price * 83.2).toLocaleString() })}
                         </p>
                       )}
                     </div>
@@ -495,7 +573,7 @@ useEffect(() => {
                 </div>
                 <div className="flex items-center p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
                   <CheckCircle2 className="w-4 h-4 mr-2 shrink-0" />
-                  Best price guaranteed
+                  {t('packageDetails.bestPriceGuaranteed')}
                 </div>
               </div>
             </div>
@@ -507,7 +585,7 @@ useEffect(() => {
           <div className="flex items-center justify-between mb-10">
             <h4 className="text-white font-bold flex items-center text-2xl">
               <CheckCircle2 className="w-8 h-8 mr-4 text-teal-400" />
-              What's Included in This Package
+              {t('packageDetails.whatsIncluded')}
             </h4>
           </div>
           
@@ -532,17 +610,17 @@ useEffect(() => {
           <div className="pt-12 border-t border-white/10">
             <h4 className="text-white font-bold mb-8 flex items-center text-xl">
               <XCircle className="w-6 h-6 mr-4 text-red-400" />
-              What's Not Included
+              {t('packageDetails.whatsNotIncluded')}
             </h4>
             <div className="bg-red-500/5 border border-red-500/10 rounded-[32px] p-8">
               <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-5 gap-x-12">
                 {[
-                  'Personal Expenses & Shopping',
-                  'Extra Adventure Activities (Pay Separately)',
-                  'Optional Upgrades & Extra Rides',
-                  'Travel Insurance (Unless specified)',
-                  'Anything not mentioned in inclusions',
-                  'Tips & Gratuities'
+                  t('packageDetails.exclusionPersonal'),
+                  t('packageDetails.exclusionAdventure'),
+                  t('packageDetails.exclusionUpgrades'),
+                  t('packageDetails.exclusionInsurance'),
+                  t('packageDetails.exclusionOther'),
+                  t('packageDetails.exclusionTips')
                 ].map((item, i) => (
                   <li key={i} className="flex items-center text-gray-400 text-sm">
                     <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 mr-4 shrink-0">
@@ -555,7 +633,138 @@ useEffect(() => {
             </div>
           </div>
         </section>
+
+        {/* Reviews Section */}
+        <section className="mt-12 mb-20 bg-white/5 p-8 md:p-12 rounded-[40px] border border-white/10 shadow-xl">
+          <div className="flex items-center justify-between mb-10">
+            <h4 className="text-white font-bold flex items-center text-2xl">
+              <MessageSquare className="w-8 h-8 mr-4 text-indigo-400" />
+              Traveler Reviews
+            </h4>
+            <div className="flex items-center bg-indigo-500/10 px-4 py-2 rounded-2xl border border-indigo-500/20">
+              <Star className="w-5 h-5 text-amber-400 fill-amber-400 mr-2" />
+              <span className="text-white font-bold text-lg">
+                {reviews.length > 0 
+                  ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) 
+                  : 'New'}
+              </span>
+              <span className="text-gray-500 ml-2 text-sm">
+                ({reviews.length} reviews)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+              <h5 className="text-white font-bold text-lg mb-6">Write a Review</h5>
+              
+              {reviewError && (
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center">
+                  <XCircle className="w-5 h-5 mr-3 shrink-0" />
+                  {reviewError}
+                </div>
+              )}
+
+              {reviewSuccess && (
+                <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm flex items-center">
+                  <CheckCircle2 className="w-5 h-5 mr-3 shrink-0" />
+                  Your review has been published!
+                </div>
+              )}
+
+              <form onSubmit={handleSubmitReview} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Rating</label>
+                  <div className="flex space-x-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setRating(star)}
+                        className="focus:outline-none transition-transform hover:scale-110"
+                      >
+                        <Star 
+                          className={`w-8 h-8 ${rating >= star ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : 'text-gray-600'}`} 
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Your Experience</label>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    required
+                    rows={4}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
+                    placeholder="Tell us what you loved about this package..."
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                >
+                  {isSubmittingReview ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Submitting...</>
+                  ) : (
+                    'Publish Review'
+                  )}
+                </button>
+              </form>
+            </div>
+
+            <div className="space-y-6 max-h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              {reviews.length === 0 ? (
+                <div className="text-center py-12 bg-white/5 rounded-3xl border border-white/5">
+                  <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400">No reviews yet. Be the first to review!</p>
+                </div>
+              ) : (
+                reviews.map((review) => (
+                  <div key={review.id} className="bg-white/5 p-6 rounded-3xl border border-white/5">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold mr-4 shrink-0 shadow-lg shadow-indigo-500/20">
+                          {review.user?.firstName?.charAt(0) || review.user?.name?.charAt(0) || 'A'}
+                        </div>
+                        <div>
+                          <p className="text-white font-bold text-sm">{review.user?.firstName || review.user?.name || 'Anonymous'}</p>
+                          <p className="text-gray-500 text-xs">
+                            {new Date(review.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex bg-black/30 px-2 py-1 rounded-lg border border-white/5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-700'}`} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-gray-300 text-sm leading-relaxed">{review.comment}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+
       </div>
+
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        shareUrl={window.location.href}
+        shareTitle={pkg.title}
+        shareText={`Hey! I found this amazing travel package for ${pkg.destination} on Destinix: "${pkg.title}". Check it out: `}
+        shareSubject={`Plan a trip to ${pkg.destination} with me!`}
+      />
     </div>
   );
 };

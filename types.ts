@@ -27,6 +27,10 @@ export interface TravelPackage {
   currency: 'INR' | 'USD' | 'EUR' | 'THB' | 'AED' | 'JPY' | 'GBP' | 'SGD';
   rating: number;
   image: string;
+  thumbnail?: string;
+  images?: string[];
+  coverImage?: string;
+  heroImage?: string;
   gallery?: string[];
   type: 'Domestic' | 'International' | 'Group' | 'Honeymoon' | 'Adventure' | 'Luxury' | 'Budget' | 'Family' | 'Weekend' | 'Ultra-Luxury';
   description: string;
@@ -156,6 +160,20 @@ export interface Booking {
   };
   numTravelers: number;
   selectedVehicle: string | null;
+}
+
+export type ExpenseCategory = 'food' | 'transport' | 'stay' | 'activities' | 'other';
+
+export interface Expense {
+  id: string;
+  userId: string;
+  tripLabel: string;
+  category: ExpenseCategory;
+  amount: number;
+  currency: string;
+  amountINR: number;
+  note: string | null;
+  createdAt: string;
 }
 
 export enum Page {
