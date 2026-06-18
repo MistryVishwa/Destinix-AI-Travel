@@ -449,6 +449,57 @@ app.post("/api/verify-payment", (req, res) => {
   }
 });
 
+app.get("/api/reviews/:packageId", async (req, res) => {
+  const { packageId } = req.params;
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { packageId },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(reviews);
+  } catch (error: any) {
+    console.error("Failed to fetch reviews:", error);
+    res.status(500).json({ error: "Failed to fetch reviews" });
+  }
+});
+
+app.post("/api/reviews", async (req, res) => {
+  const { packageId, email, rating, comment } = req.body;
+  if (!packageId || !email || !rating) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        packageId,
+        user: { email: { equals: email, mode: 'insensitive' } },
+        status: 'Confirmed'
+      }
+    });
+
+    if (!booking) {
+      return res.status(403).json({ error: "You must have a confirmed booking for this package to leave a review." });
+    }
+
+    const review = await prisma.review.create({
+      data: {
+        packageId,
+        userId: booking.userId,
+        rating,
+        comment
+      },
+      include: { user: true }
+    });
+
+    res.json(review);
+  } catch (error: any) {
+    console.error("Failed to submit review:", error);
+    res.status(500).json({ error: "Failed to submit review" });
+  }
+});
+
 const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'stay', 'activities', 'other'];
 
 app.post("/api/expenses", async (req, res) => {

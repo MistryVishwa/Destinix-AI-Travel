@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TravelPackage } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronDown, MapPin, Calendar, Wallet, Sparkles, ShieldCheck, Play, Info, CheckCircle2, Hotel, Utensils, Plane, Car, Camera, UserCheck, XCircle, Loader2, Check, X } from 'lucide-react';
+import { ChevronDown, MapPin, Calendar, Wallet, Sparkles, ShieldCheck, Play, Info, CheckCircle2, Hotel, Utensils, Plane, Car, Camera, UserCheck, XCircle, Loader2, Check, X, Star, MessageSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 import { useNavigate } from 'react-router-dom';
 
@@ -89,6 +89,13 @@ const PackageDetails: React.FC<PackageDetailsProps> = ({
 const [images, setImages] = useState<string[]>([]);
 const [activeImg, setActiveImg] = useState<string | null>(pkg.image || (Array.isArray(pkg.gallery) && pkg.gallery.length > 0 ? pkg.gallery[0] : null));
 const [loadingImages, setLoadingImages] = useState(false);
+
+const [reviews, setReviews] = useState<any[]>([]);
+const [rating, setRating] = useState(5);
+const [comment, setComment] = useState('');
+const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+const [reviewError, setReviewError] = useState<string | null>(null);
+const [reviewSuccess, setReviewSuccess] = useState(false);
 
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
 
@@ -178,6 +185,64 @@ useEffect(() => {
 
   fetchImages();
 }, [pkg.title]);
+
+useEffect(() => {
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`/api/reviews/${pkg.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  fetchReviews();
+}, [pkg.id]);
+
+const handleSubmitReview = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setReviewError(null);
+  setReviewSuccess(false);
+  setIsSubmittingReview(true);
+  
+  const currentUser = localStorage.getItem('destinix_current_user');
+  if (!currentUser) {
+    setReviewError("Please log in to leave a review.");
+    setIsSubmittingReview(false);
+    return;
+  }
+  
+  const { email } = JSON.parse(currentUser);
+
+  try {
+    const res = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        packageId: pkg.id,
+        email,
+        rating,
+        comment
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to submit review");
+    }
+
+    setReviews([data, ...reviews]);
+    setComment('');
+    setRating(5);
+    setReviewSuccess(true);
+  } catch (error: any) {
+    setReviewError(error.message);
+  } finally {
+    setIsSubmittingReview(false);
+  }
+};
 
   /* =============================== */
 
@@ -555,6 +620,128 @@ useEffect(() => {
             </div>
           </div>
         </section>
+
+        {/* Reviews Section */}
+        <section className="mt-12 mb-20 bg-white/5 p-8 md:p-12 rounded-[40px] border border-white/10 shadow-xl">
+          <div className="flex items-center justify-between mb-10">
+            <h4 className="text-white font-bold flex items-center text-2xl">
+              <MessageSquare className="w-8 h-8 mr-4 text-indigo-400" />
+              Traveler Reviews
+            </h4>
+            <div className="flex items-center bg-indigo-500/10 px-4 py-2 rounded-2xl border border-indigo-500/20">
+              <Star className="w-5 h-5 text-amber-400 fill-amber-400 mr-2" />
+              <span className="text-white font-bold text-lg">
+                {reviews.length > 0 
+                  ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) 
+                  : 'New'}
+              </span>
+              <span className="text-gray-500 ml-2 text-sm">
+                ({reviews.length} reviews)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+              <h5 className="text-white font-bold text-lg mb-6">Write a Review</h5>
+              
+              {reviewError && (
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center">
+                  <XCircle className="w-5 h-5 mr-3 shrink-0" />
+                  {reviewError}
+                </div>
+              )}
+
+              {reviewSuccess && (
+                <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm flex items-center">
+                  <CheckCircle2 className="w-5 h-5 mr-3 shrink-0" />
+                  Your review has been published!
+                </div>
+              )}
+
+              <form onSubmit={handleSubmitReview} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Rating</label>
+                  <div className="flex space-x-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setRating(star)}
+                        className="focus:outline-none transition-transform hover:scale-110"
+                      >
+                        <Star 
+                          className={`w-8 h-8 ${rating >= star ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]' : 'text-gray-600'}`} 
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Your Experience</label>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    required
+                    rows={4}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
+                    placeholder="Tell us what you loved about this package..."
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+                >
+                  {isSubmittingReview ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Submitting...</>
+                  ) : (
+                    'Publish Review'
+                  )}
+                </button>
+              </form>
+            </div>
+
+            <div className="space-y-6 max-h-[600px] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              {reviews.length === 0 ? (
+                <div className="text-center py-12 bg-white/5 rounded-3xl border border-white/5">
+                  <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400">No reviews yet. Be the first to review!</p>
+                </div>
+              ) : (
+                reviews.map((review) => (
+                  <div key={review.id} className="bg-white/5 p-6 rounded-3xl border border-white/5">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold mr-4 shrink-0 shadow-lg shadow-indigo-500/20">
+                          {review.user?.firstName?.charAt(0) || review.user?.name?.charAt(0) || 'A'}
+                        </div>
+                        <div>
+                          <p className="text-white font-bold text-sm">{review.user?.firstName || review.user?.name || 'Anonymous'}</p>
+                          <p className="text-gray-500 text-xs">
+                            {new Date(review.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex bg-black/30 px-2 py-1 rounded-lg border border-white/5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            className={`w-3.5 h-3.5 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-700'}`} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-gray-300 text-sm leading-relaxed">{review.comment}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
   );
