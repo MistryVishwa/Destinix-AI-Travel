@@ -1,16 +1,17 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { User as UserType, TripPlan, PriceAlert, TravelPackage, Page, Booking } from '../types';
 import { updateProfile } from '../services/authService';
-import { MOCK_PACKAGES } from '../constants.tsx';
 import PackageCard from './PackageCard';
 import { generateReceiptPDF } from '../utils/receipt';
 import { formatCurrency } from '../utils/currency';
 import InvoiceTemplate from './InvoiceTemplate';
-import { 
-  Calendar, MapPin, CreditCard, Download, ChevronRight, 
-  Clock, CheckCircle, AlertCircle, Loader2, Plane, 
-  Hotel, Users, Bell, User as UserIcon 
+import ExpenseTracker from './ExpenseTracker';
+import {
+  Calendar, MapPin, CreditCard, Download, ChevronRight,
+  Clock, CheckCircle, AlertCircle, Loader2, Plane,
+  Hotel, Users, Bell, User as UserIcon, Wallet
 } from 'lucide-react';
 
 interface ProfileProps {
@@ -18,10 +19,12 @@ interface ProfileProps {
   onUpdateProfile: (updates: Partial<UserType>) => void;
   onNavigate: (page: Page) => void;
   onViewPackage: (pkg: TravelPackage) => void;
+  packages: TravelPackage[];
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, onViewPackage }) => {
-  const [activeTab, setActiveTab] = useState<'settings' | 'trips' | 'alerts' | 'bookings'>('bookings');
+const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, onViewPackage, packages }) => {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<'settings' | 'trips' | 'alerts' | 'bookings' | 'expenses'>('bookings');
   const [formData, setFormData] = useState({
     name: user.name,
     phone: user.phone || '',
@@ -96,9 +99,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
         address: formData.address,
         preferences: formData.preferences.split(',').map(p => p.trim()).filter(p => p)
       });
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      setMessage({ type: 'success', text: t('profile.successProfileUpdated') });
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Failed to update profile' });
+      setMessage({ type: 'error', text: err.message || t('profile.errorUpdateFailed') });
     } finally {
       setLoading(false);
     }
@@ -108,7 +111,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        setMessage({ type: 'error', text: 'Image size must be less than 2MB' });
+        setMessage({ type: 'error', text: t('profile.errorImageTooLarge') });
         return;
       }
       const reader = new FileReader();
@@ -116,9 +119,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
         const base64String = reader.result as string;
         try {
           await onUpdateProfile({ avatar: base64String });
-          setMessage({ type: 'success', text: 'Profile picture updated!' });
+          setMessage({ type: 'success', text: t('profile.successPictureUpdated') });
         } catch (err: any) {
-          setMessage({ type: 'error', text: 'Failed to upload image' });
+          setMessage({ type: 'error', text: t('profile.errorImageUploadFailed') });
         }
       };
       reader.readAsDataURL(file);
@@ -128,13 +131,13 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
   const removeAvatar = async () => {
     try {
       await onUpdateProfile({ avatar: '' });
-      setMessage({ type: 'success', text: 'Profile picture removed' });
+      setMessage({ type: 'success', text: t('profile.successPictureRemoved') });
     } catch (err: any) {
-      setMessage({ type: 'error', text: 'Failed to remove image' });
+      setMessage({ type: 'error', text: t('profile.errorImageRemoveFailed') });
     }
   };
 
-  const savedPackages = MOCK_PACKAGES.filter(p => user.savedPackages?.includes(p.id));
+  const savedPackages = packages.filter(p => user.savedPackages?.includes(p.id));
 
   return (
     <div className="pt-32 pb-24 max-w-6xl mx-auto px-4">
@@ -173,10 +176,11 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
           <div className="bg-white/5 border border-white/10 rounded-[32px] p-6 sticky top-32">
             <div className="space-y-2">
               {[
-                { id: 'bookings', label: 'My Bookings', icon: <CreditCard className="w-5 h-5" /> },
-                { id: 'settings', label: 'Profile Settings', icon: <UserIcon className="w-5 h-5" /> },
-                { id: 'trips', label: 'Saved Trips', icon: <Plane className="w-5 h-5" /> },
-                { id: 'alerts', label: 'Price Alerts', icon: <Bell className="w-5 h-5" /> }
+                { id: 'bookings', label: t('profile.myBookings'), icon: <CreditCard className="w-5 h-5" /> },
+                { id: 'settings', label: t('profile.profileSettings'), icon: <UserIcon className="w-5 h-5" /> },
+                { id: 'trips', label: t('profile.savedTrips'), icon: <Plane className="w-5 h-5" /> },
+                { id: 'expenses', label: t('profile.expenseTracker'), icon: <Wallet className="w-5 h-5" /> },
+                { id: 'alerts', label: t('profile.priceAlerts'), icon: <Bell className="w-5 h-5" /> }
               ].map(tab => (
                 <button 
                   key={tab.id}
@@ -206,32 +210,32 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
 
           {activeTab === 'settings' && (
             <div className="bg-white/5 border border-white/10 rounded-[40px] p-8 md:p-12 animate-[fadeIn_0.5s_ease-out]">
-              <h1 className="text-3xl font-serif font-bold text-white mb-8">Personal Information</h1>
+              <h1 className="text-3xl font-serif font-bold text-white mb-8">{t('profile.personalInformation')}</h1>
               <form onSubmit={handleSaveSettings} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Full Name</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('profile.fullName')}</label>
                     <input name="name" type="text" value={formData.name} onChange={handleInputChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 mb-2">Email (Locked)</label>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('profile.emailLocked')}</label>
                     <input disabled type="email" value={user.email} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Phone Number</label>
-                  <input name="phone" type="tel" value={formData.phone} onChange={handleInputChange} placeholder="+1 555-000-0000" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('profile.phoneNumber')}</label>
+                  <input name="phone" type="tel" value={formData.phone} onChange={handleInputChange} placeholder={t('profile.phonePlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Home Address</label>
-                  <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder="Your primary shipping/billing address" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none h-24 transition-all resize-none" />
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('profile.homeAddress')}</label>
+                  <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder={t('profile.addressPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none h-24 transition-all resize-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-2">Travel Preferences (Comma separated)</label>
-                  <input name="preferences" type="text" value={formData.preferences} onChange={handleInputChange} placeholder="e.g. Hiking, Luxury, Foodie, Late Night" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                  <label className="block text-sm font-medium text-gray-400 mb-2">{t('profile.travelPreferences')}</label>
+                  <input name="preferences" type="text" value={formData.preferences} onChange={handleInputChange} placeholder={t('profile.preferencesPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
                 </div>
                 <button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-xl transition-all shadow-xl shadow-indigo-600/20">
-                  {loading ? 'Saving Changes...' : 'Save Profile Changes'}
+                  {loading ? t('profile.savingChanges') : t('profile.saveProfileChanges')}
                 </button>
               </form>
             </div>
@@ -241,8 +245,8 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
             <div className="space-y-12 animate-[fadeIn_0.5s_ease-out]">
               {/* Saved Packages Section */}
               <section>
-                <h1 className="text-3xl font-serif font-bold text-white mb-2">Saved Packages</h1>
-                <p className="text-gray-500 mb-8">Hand-picked destinations you've marked for later.</p>
+                <h1 className="text-3xl font-serif font-bold text-white mb-2">{t('profile.savedPackages')}</h1>
+                <p className="text-gray-500 mb-8">{t('profile.savedPackagesSubtitle')}</p>
                 {savedPackages.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {savedPackages.map(pkg => (
@@ -260,15 +264,15 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                   </div>
                 ) : (
                   <div className="bg-white/5 border border-white/10 border-dashed rounded-[40px] py-12 text-center">
-                    <p className="text-gray-500 text-sm">No packages saved yet. Start exploring our collection!</p>
+                    <p className="text-gray-500 text-sm">{t('profile.noSavedPackages')}</p>
                   </div>
                 )}
               </section>
 
               {/* Saved AI Trips Section */}
               <section>
-                <h1 className="text-3xl font-serif font-bold text-white mb-2">AI Planned Journeys</h1>
-                <p className="text-gray-500 mb-8">Custom itineraries generated by our smart architect.</p>
+                <h1 className="text-3xl font-serif font-bold text-white mb-2">{t('profile.aiPlannedJourneys')}</h1>
+                <p className="text-gray-500 mb-8">{t('profile.aiPlannedSubtitle')}</p>
                 {savedTrips.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {savedTrips.map((trip, i) => (
@@ -285,18 +289,18 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                         </button>
                         <div className="flex justify-between items-start mb-4 pr-8">
                           <h3 className="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">{trip.destination}</h3>
-                          <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">{trip.duration} Days</span>
+                          <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">{trip.duration} {t('profile.daysSuffix')}</span>
                         </div>
-                        <p className="text-gray-400 text-sm mb-6 line-clamp-2">Vibe: {trip.vibe}</p>
+                        <p className="text-gray-400 text-sm mb-6 line-clamp-2">{t('profile.vibeLabel', { vibe: trip.vibe })}</p>
                         <button className="text-indigo-400 text-sm font-bold flex items-center hover:underline">
-                          View Itinerary <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                          {t('profile.viewItinerary')} <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                         </button>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="bg-white/5 border border-white/10 border-dashed rounded-[40px] py-12 text-center">
-                    <p className="text-gray-500 text-sm">No AI plans saved yet.</p>
+                    <p className="text-gray-500 text-sm">{t('profile.noAiPlans')}</p>
                   </div>
                 )}
               </section>
@@ -307,10 +311,10 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
             <div className="animate-[fadeIn_0.5s_ease-out]">
               <div className="flex justify-between items-end mb-8">
                 <div>
-                  <h1 className="text-3xl font-serif font-bold text-white mb-2">My Bookings</h1>
-                  <p className="text-gray-500">Manage your upcoming adventures and view past trips.</p>
+                  <h1 className="text-3xl font-serif font-bold text-white mb-2">{t('profile.myBookings')}</h1>
+                  <p className="text-gray-500">{t('profile.manageBookingsSubtitle')}</p>
                 </div>
-                <button 
+                <button
                   onClick={fetchBookings}
                   className="p-2 text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all"
                   title="Refresh Bookings"
@@ -322,7 +326,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
               {fetchingBookings && bookings.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 space-y-4">
                   <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-                  <p className="text-gray-500 font-medium">Fetching your bookings...</p>
+                  <p className="text-gray-500 font-medium">{t('profile.fetchingBookings')}</p>
                 </div>
               ) : bookings.length > 0 ? (
                 <div className="space-y-6">
@@ -341,7 +345,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                               <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
                                 booking.status === 'Confirmed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
                               }`}>
-                                {booking.status === 'Confirmed' ? 'Booking Confirmed' : booking.status}
+                                {booking.status === 'Confirmed' ? t('profile.bookingConfirmed') : booking.status}
                               </span>
                               <span className="text-xs text-gray-500 font-mono">#{booking.id.slice(-6)}</span>
                             </div>
@@ -353,29 +357,29 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                               <div className="flex items-center space-x-3">
                                 <Calendar className="w-4 h-4 text-gray-500" />
                                 <div>
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Booked On</p>
+                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{t('profile.bookedOn')}</p>
                                   <p className="text-sm text-gray-300">{new Date(booking.createdAt).toLocaleDateString()}</p>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
                                 <CreditCard className="w-4 h-4 text-gray-500" />
                                 <div>
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Amount</p>
+                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{t('profile.amount')}</p>
                                   <p className="text-sm text-white font-bold">{formatCurrency(booking.totalAmount, booking.currency)}</p>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-3">
                                 <MapPin className="w-4 h-4 text-gray-500" />
                                 <div>
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Vehicle</p>
-                                  <p className="text-sm text-gray-300 capitalize">{booking.selectedVehicle || 'Standard'}</p>
+                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{t('profile.vehicle')}</p>
+                                  <p className="text-sm text-gray-300 capitalize">{booking.selectedVehicle || t('profile.standard')}</p>
                                 </div>
                               </div>
                               {booking.flight && (
                                 <div className="flex items-center space-x-3">
                                   <Plane className="w-4 h-4 text-gray-500" />
                                   <div>
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Flight</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{t('profile.flight')}</p>
                                     <p className="text-sm text-gray-300">{booking.flight.airline} ({booking.flight.class})</p>
                                   </div>
                                 </div>
@@ -384,7 +388,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                                 <div className="flex items-center space-x-3">
                                   <Hotel className="w-4 h-4 text-gray-500" />
                                   <div>
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Hotel</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{t('profile.hotel')}</p>
                                     <p className="text-sm text-gray-300">{booking.hotel.name} ({booking.hotel.stars}★)</p>
                                   </div>
                                 </div>
@@ -392,7 +396,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                               <div className="flex items-center space-x-3">
                                 <Users className="w-4 h-4 text-gray-500" />
                                 <div>
-                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Travelers</p>
+                                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{t('profile.travelers')}</p>
                                   <p className="text-sm text-gray-300">{booking.numTravelers}</p>
                                 </div>
                               </div>
@@ -400,7 +404,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                                 <div className="flex items-start space-x-3 col-span-2 md:col-span-3">
                                   <CheckCircle className="w-4 h-4 text-emerald-500 mt-1" />
                                   <div>
-                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Add-ons</p>
+                                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">{t('profile.addOns')}</p>
                                     <p className="text-sm text-gray-300">{booking.addons.join(', ')}</p>
                                   </div>
                                 </div>
@@ -420,18 +424,18 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                                   ) : (
                                     <Download className="w-4 h-4" />
                                   )}
-                                  <span>{downloadingReceiptId === booking.id ? 'Downloading...' : 'Receipt Download'}</span>
+                                  <span>{downloadingReceiptId === booking.id ? t('profile.downloading') : t('profile.receiptDownload')}</span>
                                 </button>
                               )}
-                            <button 
+                            <button
                               onClick={() => {
-                                const pkg = MOCK_PACKAGES.find(p => p.id === booking.packageId);
+                                const pkg = packages.find(p => p.id === booking.packageId);
                                 if (pkg) onViewPackage(pkg);
                               }}
                               className="w-full flex items-center justify-center space-x-2 bg-white/5 hover:bg-white/10 border border-white/10 py-3 rounded-xl text-white text-sm font-bold transition-all"
                             >
                               <ChevronRight className="w-4 h-4" />
-                              <span>View Package</span>
+                              <span>{t('profile.viewPackage')}</span>
                             </button>
                           </div>
                         </div>
@@ -444,28 +448,32 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                   <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CreditCard className="w-10 h-10 text-gray-600" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">No bookings found</h3>
-                  <p className="text-gray-500 mb-8 max-w-xs mx-auto text-sm">You haven't booked any trips yet. Explore our packages to start your journey!</p>
-                  <button 
+                  <h3 className="text-xl font-bold text-white mb-2">{t('profile.noBookingsFound')}</h3>
+                  <p className="text-gray-500 mb-8 max-w-xs mx-auto text-sm">{t('profile.noBookingsSubtitle')}</p>
+                  <button
                     onClick={() => onNavigate(Page.Packages)}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-3 rounded-xl transition-all"
                   >
-                    Explore Packages
+                    {t('profile.explorePackages')}
                   </button>
                 </div>
               )}
             </div>
           )}
 
+          {activeTab === 'expenses' && (
+            <ExpenseTracker userId={user.id} />
+          )}
+
           {activeTab === 'alerts' && (
             <div className="animate-[fadeIn_0.5s_ease-out]">
-              <h1 className="text-3xl font-serif font-bold text-white mb-2">Price Alerts</h1>
-              <p className="text-gray-500 mb-8">Get notified when prices drop for your favorite destinations.</p>
+              <h1 className="text-3xl font-serif font-bold text-white mb-2">{t('profile.priceAlerts')}</h1>
+              <p className="text-gray-500 mb-8">{t('profile.priceAlertsSubtitle')}</p>
               
               {user.priceAlerts && user.priceAlerts.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4">
                   {user.priceAlerts.map((alert) => {
-                    const pkg = MOCK_PACKAGES.find(p => p.id === alert.targetIdOrName);
+                    const pkg = packages.find(p => p.id === alert.targetIdOrName);
                     return (
                       <div key={alert.id} className="bg-white/5 border border-white/10 rounded-3xl p-6 flex items-center justify-between group hover:border-indigo-500/50 transition-all">
                         <div className="flex items-center space-x-4">
@@ -474,12 +482,12 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                           </div>
                           <div>
                             <h4 className="text-white font-bold">{pkg?.title || alert.targetIdOrName}</h4>
-                            <p className="text-xs text-gray-500">Tracking since {new Date(alert.createdAt).toLocaleDateString()}</p>
+                            <p className="text-xs text-gray-500">{t('profile.trackingSince', { date: new Date(alert.createdAt).toLocaleDateString() })}</p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-6">
                           <div className="text-right">
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Target Price</p>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('profile.targetPrice')}</p>
                             <p className="text-indigo-400 font-bold">{pkg?.currency} {alert.targetPrice?.toLocaleString()}</p>
                           </div>
                           <button 
@@ -498,7 +506,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                 </div>
               ) : (
                 <div className="bg-white/5 border border-white/10 border-dashed rounded-[40px] py-24 text-center">
-                  <p className="text-gray-500">You are not currently tracking any destination prices.</p>
+                  <p className="text-gray-500">{t('profile.noPriceAlerts')}</p>
                 </div>
               )}
             </div>
@@ -513,7 +521,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
               paymentId: activeBookingForReceipt.paymentId || 'N/A',
               date: activeBookingForReceipt.createdAt
             }}
-            pkg={MOCK_PACKAGES.find(p => p.id === activeBookingForReceipt.packageId) || {
+            pkg={packages.find(p => p.id === activeBookingForReceipt.packageId) || {
               title: activeBookingForReceipt.packageTitle,
               destination: activeBookingForReceipt.city || 'Unknown',
               currency: activeBookingForReceipt.currency,

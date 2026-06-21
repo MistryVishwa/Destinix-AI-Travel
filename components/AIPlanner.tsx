@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { useSearchParams } from 'react-router-dom';
+import ShareModal from './ShareModal';
 import { 
   Sparkles, MapPin, Calendar, Wallet, Clock, 
   ChevronDown, ChevronUp, Star, Coffee, Utensils, 
@@ -38,6 +41,9 @@ const TypingText: React.FC<{ text: string; speed?: number }> = ({ text, speed = 
 };
 
 const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }) => {
+  const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [destination, setDestination] = useState('');
   const [days, setDays] = useState(3);
   const [budget, setBudget] = useState('Moderate');
@@ -60,9 +66,15 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
     }
   }, [notification]);
 
-  const handlePlan = async () => {
-    if (!destination.trim()) {
-      setNotification('Please enter a destination');
+  const handlePlan = async (
+    customDest = destination,
+    customDays = days,
+    customBudget = budget,
+    customVibe = vibe
+  ) => {
+    const destToUse = customDest.trim();
+    if (!destToUse) {
+      setNotification(t('aiPlanner.notifEnterDestination'));
       return;
     }
 
@@ -71,24 +83,55 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
     setIsSaved(false);
 
     try {
-      const generated = await generateTripPlan(destination, days, budget, vibe);
+      const generated = await generateTripPlan(destToUse, customDays, customBudget, customVibe, i18n.language);
       setPlan(generated);
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (error) {
       console.error(error);
-      setNotification('Failed to generate plan. Please try again.');
+      setNotification(t('aiPlanner.notifGenerateFailed'));
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const destParam = searchParams.get('destination');
+    const daysParam = searchParams.get('days');
+    const budgetParam = searchParams.get('budget');
+    const vibeParam = searchParams.get('vibe');
+
+    if (destParam) {
+      const parsedDays = daysParam ? Number(daysParam) : 3;
+      const parsedBudget = budgetParam || 'Moderate';
+      const parsedVibe = vibeParam || 'Culture & Food';
+
+      setDestination(destParam);
+      setDays(parsedDays);
+      setBudget(parsedBudget);
+      setVibe(parsedVibe);
+
+      handlePlan(destParam, parsedDays, parsedBudget, parsedVibe);
+    }
+  }, []);
+
+  const getShareUrl = () => {
+    if (!plan) return window.location.href;
+    const baseUrl = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams();
+    params.set('destination', plan.destination);
+    params.set('days', plan.duration.toString());
+    params.set('budget', plan.budget);
+    params.set('vibe', plan.vibe || vibe);
+    return `${baseUrl}?${params.toString()}`;
   };
 
   const handleSaveTrip = () => {
     if (!plan) return;
     
     if (!user) {
-      setNotification('Please sign in to save your trip');
+      setNotification(t('aiPlanner.notifSignInToSave'));
       onSignInClick();
       return;
     }
@@ -100,14 +143,14 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
     localStorage.setItem('destinix_saved_trips', JSON.stringify(savedTrips));
     
     setIsSaved(true);
-    setNotification('Trip saved to your profile successfully!');
+    setNotification(t('aiPlanner.notifTripSaved'));
   };
 
   const downloadPDF = async () => {
   if (!plan) return;
 
   try {
-    setNotification("Generating Premium Travel PDF...");
+    setNotification(t('aiPlanner.notifGeneratingPdf'));
 
     const pdf = new jsPDF("p", "mm", "a4");
 
@@ -233,10 +276,10 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
 
     pdf.save(`Destinix_${plan.destination}_Premium_Itinerary.pdf`);
 
-    setNotification("Premium itinerary downloaded successfully!");
+    setNotification(t('aiPlanner.notifPdfDownloaded'));
   } catch (error) {
     console.error(error);
-    setNotification("PDF generation failed.");
+    setNotification(t('aiPlanner.notifPdfFailed'));
   }
 };
 
@@ -309,24 +352,23 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
             className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-full mb-6"
           >
             <Sparkles className="w-4 h-4 text-indigo-400" />
-            <span className="text-indigo-400 text-xs font-bold uppercase tracking-widest">Next-Gen Intelligence</span>
+            <span className="text-indigo-400 text-xs font-bold uppercase tracking-widest">{t('aiPlanner.badge')}</span>
           </motion.div>
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-7xl font-serif font-bold text-white mb-6"
           >
-            Smart Trip <span className="text-indigo-400 italic">Architect</span>
+            {t('aiPlanner.titleLine1')} <span className="text-indigo-400 italic">{t('aiPlanner.titleLine2')}</span>
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="text-gray-400 max-w-2xl mx-auto text-lg"
           >
-            Experience the future of travel planning. Our AI crafts hyper-personalized, 
-            luxury itineraries tailored to your unique vibe.
+            {t('aiPlanner.subtitle')}
           </motion.p>
         </div>
 
@@ -343,11 +385,11 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
               <div>
                 <label className="flex items-center text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">
                   <MapPin className="w-4 h-4 mr-2 text-indigo-400" />
-                  DESTINATION
+                  {t('aiPlanner.destination')}
                 </label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. Kyoto, Amalfi Coast, Goa"
+                <input
+                  type="text"
+                  placeholder={t('aiPlanner.destinationPlaceholder')}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-lg"
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
@@ -357,7 +399,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                 <div>
                   <label className="flex items-center text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">
                     <Calendar className="w-4 h-4 mr-2 text-indigo-400" />
-                    DAYS
+                    {t('aiPlanner.days')}
                   </label>
                   <input 
                     type="number" 
@@ -370,17 +412,17 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                 <div>
                   <label className="flex items-center text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">
                     <Wallet className="w-4 h-4 mr-2 text-indigo-400" />
-                    BUDGET
+                    {t('aiPlanner.budget')}
                   </label>
-                  <select 
+                  <select
                     className="w-full bg-gray-900 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-lg appearance-none"
                     value={budget}
                     onChange={(e) => setBudget(e.target.value)}
                   >
-                    <option value="Backpacker">Backpacker</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="Luxury">Luxury</option>
-                    <option value="Ultra-Luxury">Ultra-Luxury</option>
+                    <option value="Backpacker">{t('aiPlanner.budgetBackpacker')}</option>
+                    <option value="Moderate">{t('aiPlanner.budgetModerate')}</option>
+                    <option value="Luxury">{t('aiPlanner.budgetLuxury')}</option>
+                    <option value="Ultra-Luxury">{t('aiPlanner.budgetUltraLuxury')}</option>
                   </select>
                 </div>
               </div>
@@ -389,10 +431,10 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
               <div>
                 <label className="flex items-center text-sm font-bold text-gray-400 uppercase tracking-widest mb-3">
                   <Compass className="w-4 h-4 mr-2 text-indigo-400" />
-                  TRIP VIBE
+                  {t('aiPlanner.tripVibe')}
                 </label>
-                <textarea 
-                  placeholder="e.g. Hidden gems, local street food, photography spots, slow travel..."
+                <textarea
+                  placeholder={t('aiPlanner.tripVibePlaceholder')}
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none h-[156px] transition-all text-lg resize-none"
                   value={vibe}
                   onChange={(e) => setVibe(e.target.value)}
@@ -402,19 +444,19 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
           </div>
 
           <button 
-            onClick={handlePlan}
+            onClick={() => handlePlan()}
             disabled={loading}
             className="w-full mt-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-6 rounded-2xl transition-all shadow-[0_0_30px_rgba(79,70,229,0.3)] flex items-center justify-center space-x-3 group disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
                 <RefreshCw className="w-6 h-6 animate-spin" />
-                <span className="text-xl">Architecting Your Journey...</span>
+                <span className="text-xl">{t('aiPlanner.architecting')}</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-6 h-6 group-hover:scale-120 transition-transform" />
-                <span className="text-xl">Generate Premium Itinerary</span>
+                <span className="text-xl">{t('aiPlanner.generateButton')}</span>
               </>
             )}
           </button>
@@ -456,7 +498,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-800 animate-pulse flex items-center justify-center text-gray-500 text-sm">
-                        Loading image...
+                        {t('aiPlanner.loadingImage')}
                       </div>
                     )}
                   </AnimatePresence>
@@ -486,7 +528,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                 <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[32px] p-8">
                   <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                     <Info className="w-5 h-5 mr-2 text-indigo-400" />
-                    Trip Overview
+                    {t('aiPlanner.tripOverview')}
                   </h3>
                   <p className="text-gray-400 leading-relaxed mb-6 italic">
                     <TypingText text={plan.destinationOverview} />
@@ -494,11 +536,11 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                   
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Best Time</span>
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">{t('aiPlanner.bestTime')}</span>
                       <span className="text-white font-bold text-sm">{plan.bestTimeToVisit}</span>
                     </div>
                     <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Estimated Budget</span>
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">{t('aiPlanner.estimatedBudget')}</span>
                       <span className="text-white font-bold text-sm">{plan.estimatedBudget}</span>
                     </div>
                   </div>
@@ -507,7 +549,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                     <div className="bg-indigo-500/10 p-4 rounded-2xl border border-indigo-500/20 flex items-start">
                       <Hotel className="w-5 h-5 text-indigo-400 mr-3 mt-1 shrink-0" />
                       <div>
-                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">Stay Recommendation</span>
+                        <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">{t('aiPlanner.stayRecommendation')}</span>
                         <span className="text-white font-bold text-sm">{plan.hotelSuggestion}</span>
                       </div>
                     </div>
@@ -518,7 +560,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                 <div className="grid grid-cols-2 gap-6">
                   <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-[32px] p-6 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">Weather</span>
+                      <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest block mb-1">{t('aiPlanner.weather')}</span>
                       <span className="text-2xl font-bold text-white">{plan.weather.temp}</span>
                       <span className="text-xs text-indigo-300 block">{plan.weather.condition}</span>
                     </div>
@@ -529,8 +571,8 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                     className="bg-purple-500/10 border border-purple-500/20 rounded-[32px] p-6 flex items-center justify-between cursor-pointer hover:bg-purple-500/20 transition-all"
                   >
                     <div>
-                      <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest block mb-1">Map View</span>
-                      <span className="text-sm font-bold text-white">Interactive Map</span>
+                      <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest block mb-1">{t('aiPlanner.mapView')}</span>
+                      <span className="text-sm font-bold text-white">{t('aiPlanner.interactiveMap')}</span>
                     </div>
                     <MapIcon className="w-10 h-10 text-purple-400" />
                   </div>
@@ -540,7 +582,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                 <div className="bg-white/5 border border-white/10 rounded-[32px] p-8">
                   <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                     <Wallet className="w-5 h-5 mr-2 text-indigo-400" />
-                    Budget Breakdown
+                    {t('aiPlanner.budgetBreakdown')}
                   </h3>
                   <div className="space-y-4">
                     {Object.entries(plan.budgetBreakdown).map(([key, val]) => (
@@ -582,7 +624,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                 <div className="space-y-4">
                   <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
                     <Clock className="w-6 h-6 mr-3 text-indigo-400" />
-                    Day-by-Day Journey
+                    {t('aiPlanner.dayByDayJourney')}
                   </h3>
                   {plan.itinerary.map((day) => (
                     <div 
@@ -625,7 +667,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                                 <div>
                                   <h5 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-4 flex items-center">
                                     <Sparkles className="w-3 h-3 mr-2" />
-                                    Daily Activities
+                                    {t('aiPlanner.dailyActivities')}
                                   </h5>
                                   <ul className="space-y-3">
                                     {day.activities.map((act, i) => (
@@ -641,7 +683,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                                 <div>
                                   <h5 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 flex items-center">
                                     <Star className="w-3 h-3 mr-2" />
-                                    Expert Tips
+                                    {t('aiPlanner.expertTips')}
                                   </h5>
                                   <div className="space-y-3">
                                     {day.recommendations.map((rec, i) => (
@@ -655,7 +697,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                                   <div>
                                     <h5 className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-4 flex items-center">
                                       <ShoppingBag className="w-3 h-3 mr-2" />
-                                      Shopping Stops
+                                      {t('aiPlanner.shoppingStops')}
                                     </h5>
                                     <ul className="space-y-2">
                                       {day.shops.map((shop, i) => (
@@ -681,7 +723,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                   <div className="bg-white/5 border border-white/10 rounded-[32px] p-8">
                     <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                       <Briefcase className="w-5 h-5 mr-2 text-indigo-400" />
-                      Packing List
+                      {t('aiPlanner.packingList')}
                     </h3>
                     <ul className="grid grid-cols-1 gap-3">
                       {plan.packingSuggestions.map((item, i) => (
@@ -695,7 +737,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                   <div className="bg-white/5 border border-white/10 rounded-[32px] p-8">
                     <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                       <Shield className="w-5 h-5 mr-2 text-emerald-400" />
-                      Safety & Advice
+                      {t('aiPlanner.safetyAdvice')}
                     </h3>
                     <p className="text-gray-400 text-sm leading-relaxed mb-6">
                       {plan.safetyAdvice}
@@ -719,24 +761,31 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                       className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-4 rounded-2xl transition-all flex items-center shadow-lg shadow-indigo-600/20"
                     >
                       <Save className="w-5 h-5 mr-2" />
-                      Save Trip
+                      {t('aiPlanner.saveTrip')}
                     </button>
                     <button 
                       onClick={downloadPDF}
                       className="bg-white/5 hover:bg-white/10 text-white font-bold px-8 py-4 rounded-2xl border border-white/10 transition-all flex items-center"
                     >
                       <Download className="w-5 h-5 mr-2" />
-                      Download PDF
+                      {t('aiPlanner.downloadPdf')}
+                    </button>
+                    <button 
+                      onClick={() => setIsShareOpen(true)}
+                      className="bg-white/5 hover:bg-white/10 text-white font-bold px-8 py-4 rounded-2xl border border-white/10 transition-all flex items-center"
+                    >
+                      <Share2 className="w-5 h-5 mr-2 text-indigo-400" />
+                      Share Plan
                     </button>
                   </div>
                   {!isSaved && (
                     <div className="flex items-center space-x-4">
                       <button 
-                        onClick={handlePlan}
+                        onClick={() => handlePlan()}
                         className="text-gray-400 hover:text-white font-bold flex items-center space-x-2 transition-colors"
                       >
                         <RefreshCw className="w-4 h-4" />
-                        <span>Regenerate</span>
+                        <span>{t('aiPlanner.regenerate')}</span>
                       </button>
                     </div>
                   )}
@@ -746,6 +795,17 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
           )}
         </AnimatePresence>
       </div>
+
+      {plan && (
+        <ShareModal
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          shareUrl={getShareUrl()}
+          shareTitle={`AI Travel Plan to ${plan.destination}`}
+          shareText={`Check out this custom ${plan.duration}-day travel plan to ${plan.destination} I generated using Destinix AI Trip Architect! `}
+          shareSubject={`My AI Travel Itinerary for ${plan.destination}`}
+        />
+      )}
     </div>
   );
 };

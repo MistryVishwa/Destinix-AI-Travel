@@ -1,5 +1,6 @@
 
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface HighlightItem {
   icon?: string;
@@ -14,6 +15,7 @@ interface HighlightsCarouselProps {
 }
 
 const HighlightsCarousel: React.FC<HighlightsCarouselProps> = ({ items, title, subtitle, variant = 'large' }) => {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -88,7 +90,7 @@ const HighlightsCarousel: React.FC<HighlightsCarouselProps> = ({ items, title, s
                   <h4 className={`font-bold text-white whitespace-nowrap ${variant === 'large' ? 'text-sm' : 'text-[10px]'}`}>
                     {text}
                   </h4>
-                  {variant === 'large' && <p className="text-gray-500 text-[10px] uppercase tracking-wider mt-1">Experience</p>}
+                  {variant === 'large' && <p className="text-gray-500 text-[10px] uppercase tracking-wider mt-1">{t('highlights.experience')}</p>}
                 </div>
               </div>
             );

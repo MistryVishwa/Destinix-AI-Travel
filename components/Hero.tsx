@@ -1,32 +1,25 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CATEGORIES } from '../constants.tsx';
 
 interface HeroProps {
   onSearch: (dest: string, filters: any) => void;
 }
 
-const slides = [
-  {
-    image: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&q=80&w=2000',
-    title: 'The Future of Adventure',
-    subtitle: 'Luxury Travel Reimagined'
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=2000',
-    title: 'Pristine Coastal Escapes',
-    subtitle: 'Discover Hidden Paradises'
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?auto=format&fit=crop&q=80&w=2000',
-    title: 'Cultural Immersion',
-    subtitle: 'Ancient Traditions, Modern Comfort'
-  }
+const slideImages = [
+  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&q=80&w=2000',
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=2000',
+  'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?auto=format&fit=crop&q=80&w=2000'
 ];
 
 const Hero: React.FC<HeroProps> = ({ onSearch }) => {
+  const { t } = useTranslation();
   const [destination, setDestination] = useState('');
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  const translatedSlides = t('hero.slides', { returnObjects: true }) as { title: string; subtitle: string }[];
+  const slides = slideImages.map((image, i) => ({ image, ...translatedSlides[i] }));
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -68,7 +61,7 @@ const Hero: React.FC<HeroProps> = ({ onSearch }) => {
           {slides[currentSlide].title.split(' ')[0]} <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{slides[currentSlide].title.split(' ').slice(1).join(' ')}</span>
         </h1>
         <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto animate-[slideUp_1.4s_ease-out]">
-          AI-powered planning for your next legendary journey.
+          {t('hero.tagline')}
         </p>
 
         {/* Minimalist AI Search Bar */}
@@ -79,9 +72,9 @@ const Hero: React.FC<HeroProps> = ({ onSearch }) => {
             <svg className="w-5 h-5 text-indigo-400 mr-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             </svg>
-            <input 
-              type="text" 
-              placeholder="Where would you like to go?" 
+            <input
+              type="text"
+              placeholder={t('hero.searchPlaceholder')}
               className="bg-transparent border-none focus:outline-none focus:ring-0 text-white placeholder-gray-400 w-full text-lg font-medium appearance-none"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
@@ -90,11 +83,11 @@ const Hero: React.FC<HeroProps> = ({ onSearch }) => {
           </div>
 
           {/* Search Button */}
-          <button 
+          <button
             onClick={handleSearchClick}
             className="m-1 bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all text-white font-bold px-10 rounded-[32px] shrink-0"
           >
-            Explore Now
+            {t('hero.exploreButton')}
           </button>
         </div>
       </div>

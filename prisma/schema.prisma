@@ -1,6 +1,5 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -20,10 +19,17 @@ enum InvitationStatus {
 }
 
 model User {
-  id                    String                  @id
+  id                    String                  @id @default(cuid())
   email                 String                  @unique
   name                  String
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  address               String?
+  city                  String?
+  zipCode               String?
   avatar                String?
+  avatarUrl             String?
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   
@@ -33,6 +39,29 @@ model User {
   votes                 DestinationVote[]
   messages              DiscussionMessage[]
   expenses              Expense[]
+  bookings              Booking[]
+  reviews               Review[]
+}
+
+model TravelPackage {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  title        String
+  destination  String
+  price        Float
+  currency     String
+  duration     String
+  image        String?
+  type         String
+  description  String?
+  rating       Float     @default(5.0)
+  gallery      String[]  @default([])
+  highlights   String[]  @default([])
+  bookingCount Int       @default(0)
+  viewCount    Int       @default(0)
+  
+  bookings     Booking[]
+  reviews      Review[]
 }
 
 model TripGroup {
@@ -138,12 +167,88 @@ model SharedBooking {
 
 model Expense {
   id          String    @id @default(uuid())
-  tripGroupId String
-  title       String
+  tripGroupId String?
+  title       String?
   amount      Float
-  paidBy      String
+  paidBy      String?
+  
+  userId      String?
+  tripLabel   String?
+  category    String?
+  currency    String    @default("INR")
+  amountINR   Float?
+  note        String?
+
   createdAt   DateTime  @default(now())
 
-  tripGroup   TripGroup @relation(fields: [tripGroupId], references: [id], onDelete: Cascade)
-  payer       User      @relation(fields: [paidBy], references: [id], onDelete: Cascade)
+  tripGroup   TripGroup? @relation(fields: [tripGroupId], references: [id], onDelete: Cascade)
+  payer       User?      @relation(fields: [paidBy], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  userId          String
+  packageId       String
+  totalAmount     Float
+  currency        String
+  numTravelers    Int
+  selectedVehicle String?
+  status          String   @default("Pending")
+  paymentId       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package         TravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  
+  flight          BookingFlight?
+  hotel           BookingHotel?
+  addons          BookingAddon[]
+}
+
+model BookingFlight {
+  id            String    @id @default(cuid())
+  bookingId     String    @unique
+  airline       String
+  flightNumber  String
+  departureTime DateTime?
+  arrivalTime   DateTime?
+  price         Float
+  
+  booking       Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model BookingHotel {
+  id        String    @id @default(cuid())
+  bookingId String    @unique
+  hotelName String
+  checkIn   DateTime?
+  checkOut  DateTime?
+  roomType  String?
+  price     Float
+
+  booking   Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model BookingAddon {
+  id        String  @id @default(cuid())
+  bookingId String
+  addonName String
+  price     Float
+
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  packageId String
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package   TravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
 }

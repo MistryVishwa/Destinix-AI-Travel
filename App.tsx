@@ -24,20 +24,22 @@ import { PackageSkeleton } from './components/Skeleton';
 import { MOCK_PACKAGES, MOODS, CATEGORIES } from './constants.tsx';
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import { getCurrentUser, logout as performLogout, updateProfile } from './services/authService';
+import AdminDashboard from './components/AdminDashboard';
+import { getPackages } from './services/packageService';
 import CollaborativeTrips from './components/collaboration/CollaborativeTrips';
 import GroupDashboard from './components/collaboration/GroupDashboard';
 
-
 // Wrapper for PackageDetails to handle slug-based routing
 const PackageDetailsWrapper: React.FC<{
+  packages: TravelPackage[];
   onToggleSave: (pkg: TravelPackage) => void;
   user: User | null;
   onBook: (pkg: TravelPackage) => void;
   onRequireAuth: () => void;
-}> = ({ onToggleSave, user, onBook, onRequireAuth }) => {
+}> = ({ packages, onToggleSave, user, onBook, onRequireAuth }) => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const pkg = MOCK_PACKAGES.find(p => p.slug === slug);
+  const pkg = packages.find(p => p.slug === slug);
 
   if (!pkg) {
     return (
@@ -81,9 +83,11 @@ const App: React.FC = () => {
     if (path === '/contact') return Page.Contact;
     if (path === '/booking') return Page.Booking;
     if (path === '/privacy-policy') return Page.Home;
+    if (path === '/admin') return Page.Admin;
     return Page.Home;
   }, [location.pathname]);
 
+  const [packages, setPackages] = useState<TravelPackage[]>(MOCK_PACKAGES);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilters, setSearchFilters] = useState<any>({});
@@ -93,6 +97,19 @@ const App: React.FC = () => {
   const [email, setEmail] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load packages from server on mount
+  useEffect(() => {
+    const fetchAllPackages = async () => {
+      try {
+        const pkgs = await getPackages();
+        setPackages(pkgs);
+      } catch (err) {
+        console.error("Failed to load packages from database, using mock fallback:", err);
+      }
+    };
+    fetchAllPackages();
+  }, []);
 
   // Fetch user on mount (redundant but good for syncing if needed)
   useEffect(() => {
@@ -164,6 +181,7 @@ const App: React.FC = () => {
       case Page.Contact: navigate('/contact'); break;
       case Page.Profile: navigate('/profile'); break;
       case Page.Booking: navigate('/booking'); break;
+      case Page.Admin: navigate('/admin'); break;
       default: navigate('/');
     }
     
@@ -236,13 +254,13 @@ const App: React.FC = () => {
   // Filter Logic - Independent lists for different sections
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
-    return MOCK_PACKAGES.filter(pkg => 
+    return packages.filter(pkg => 
       pkg.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pkg.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pkg.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       pkg.type.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery]);
+  }, [searchQuery, packages]);
 
   const handleCategoryChange = (cat: string) => {
     setIsLoading(true);
@@ -251,23 +269,23 @@ const App: React.FC = () => {
   };
 
   const categoryFilteredPackages = useMemo(() => {
-    if (activeCategory === 'All') return MOCK_PACKAGES;
-    return MOCK_PACKAGES.filter(pkg => pkg.type === activeCategory);
-  }, [activeCategory]);
+    if (activeCategory === 'All') return packages;
+    return packages.filter(pkg => pkg.type === activeCategory);
+  }, [activeCategory, packages]);
 
   // Packages specifically for Trending Section (Sorted by booking count)
   const trendingPackages = useMemo(() => {
-    return [...MOCK_PACKAGES]
+    return [...packages]
       .sort((a, b) => (b.bookingCount || 0) - (a.bookingCount || 0))
       .slice(0, 6);
-  }, []);
+  }, [packages]);
 
   // Aggregated Highlights for the new carousel section
   const topHighlights = useMemo(() => {
-    const all = MOCK_PACKAGES.flatMap(p => p.highlights || []);
+    const all = packages.flatMap(p => p.highlights || []);
     const unique = Array.from(new Set(all)).slice(0, 15);
     return unique;
-  }, []);
+  }, [packages]);
 
   const renderHome = () => (
     <>
@@ -592,6 +610,7 @@ const App: React.FC = () => {
               <Route path="/packages" element={renderPackages()} />
               <Route path="/packages/:slug" element={
                 <PackageDetailsWrapper 
+                  packages={packages}
                   onToggleSave={handleToggleSave}
                   user={user}
                   onBook={(pkg) => {
@@ -618,6 +637,7 @@ const App: React.FC = () => {
               <Route path="/profile" element={user ? <Profile user={user} onUpdateProfile={handleUpdateProfile} onNavigate={handleNavPageChange} onViewPackage={handleViewDetails} /> : <Navigate to="/" />} />
               <Route path="/destination-guide/:destId" element={<DestinationGuide />} />
               <Route path="/booking" element={renderBooking()} />
+              <Route path="/admin" element={user && ['admin@destinix.com', 'admin@travel.com'].includes(user.email.toLowerCase()) ? <AdminDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </motion.div>
@@ -644,7 +664,7 @@ const App: React.FC = () => {
             const pendingId = sessionStorage.getItem("pendingBookingId");
 
             if (pendingId) {
-              const pkg = MOCK_PACKAGES.find(p => p.id === pendingId);
+              const pkg = packages.find(p => p.id === pendingId);
 
               if (pkg) {
                 setSelectedPackage(pkg);

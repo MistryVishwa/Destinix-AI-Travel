@@ -7,6 +7,11 @@ import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
+import { convertToINR } from "./services/currencyService";
+import { MOCK_PACKAGES } from "./constants.tsx";
 import { createServer } from "http";
 import { Server as SocketServer } from "socket.io";
 import collaborationRoutes from "./server/collaboration/routes/groupRoutes";
@@ -14,6 +19,47 @@ import destinationGuideRouter from "./server/routes/destinationGuide";
 import { initSocket } from "./server/collaboration/socket/socketHandler";
 
 dotenv.config();
+
+const connectionString = `${process.env.DATABASE_URL}`;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
+// Admin Emails definition
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "admin@destinix.com,admin@travel.com")
+  .split(",")
+  .map(email => email.trim().toLowerCase());
+
+// Middleware to verify if the request is from an authorized Admin
+const isAdmin = (req: any, res: any, next: any) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Unauthorized. Missing token." });
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decodedStr = Buffer.from(token, 'base64').toString('utf-8');
+    const parts = decodedStr.split(".");
+    if (parts.length !== 3) {
+      return res.status(401).json({ error: "Unauthorized. Invalid token format." });
+    }
+
+    const payload = JSON.parse(parts[1]);
+    if (Date.now() > payload.exp) {
+      return res.status(401).json({ error: "Unauthorized. Token expired." });
+    }
+
+    if (!ADMIN_EMAILS.includes(payload.email.toLowerCase())) {
+      return res.status(403).json({ error: "Forbidden. Admin access required." });
+    }
+
+    req.adminEmail = payload.email;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Unauthorized. Invalid token." });
+  }
+};
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
@@ -59,8 +105,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const BOOKINGS_FILE = path.join(process.cwd(), "bookings.json");
-
 // Verify transporter connection on startup
 const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
 const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
@@ -77,48 +121,276 @@ if (smtpUser && smtpPass) {
   console.log("Running in Email Demo Mode. Set SMTP_USER and SMTP_PASS for real emails.");
 }
 
-// Helper to read/write bookings
-const getBookings = () => {
-  if (!fs.existsSync(BOOKINGS_FILE)) return [];
-  try {
-    const data = fs.readFileSync(BOOKINGS_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch (e) {
-    return [];
-  }
-};
-
-const saveBooking = (booking: any) => {
-  const bookings = getBookings();
-  bookings.push({ ...booking, id: Date.now().toString(), createdAt: new Date().toISOString() });
-  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2));
-};
-
 // API Routes
-app.post("/api/bookings", (req, res) => {
+
+// GET /api/packages - fetch all packages from DB, auto-seed if empty
+app.get("/api/packages", async (req, res) => {
+  try {
+    let packages = await prisma.travelPackage.findMany({
+      orderBy: { title: 'asc' }
+    });
+
+    if (packages.length === 0) {
+      console.log("Database has 0 packages. Auto-seeding from MOCK_PACKAGES...");
+      for (const pkg of MOCK_PACKAGES) {
+        await prisma.travelPackage.upsert({
+          where: { slug: pkg.slug },
+          update: {},
+          create: {
+            id: pkg.id,
+            slug: pkg.slug,
+            title: pkg.title,
+            destination: pkg.destination,
+            price: pkg.price,
+            currency: pkg.currency,
+            duration: pkg.duration,
+            image: pkg.image || null,
+            type: pkg.type,
+            description: pkg.description || null,
+            rating: pkg.rating || 5.0,
+            gallery: pkg.gallery || [],
+            highlights: pkg.highlights || [],
+            bookingCount: pkg.bookingCount || 0,
+            viewCount: pkg.viewCount || 0
+          }
+        });
+      }
+      packages = await prisma.travelPackage.findMany({
+        orderBy: { title: 'asc' }
+      });
+    }
+
+    res.json(packages);
+  } catch (err: any) {
+    console.error("Error fetching packages:", err);
+    // Fallback to MOCK_PACKAGES if DB query fails completely
+    res.json(MOCK_PACKAGES);
+  }
+});
+
+// POST /api/packages - create a new package (Admin only)
+app.post("/api/packages", isAdmin, async (req, res) => {
+  const pkgData = req.body;
+  if (!pkgData.title || !pkgData.destination || !pkgData.price || !pkgData.duration || !pkgData.type) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const slug = pkgData.slug || pkgData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const newPkg = await prisma.travelPackage.create({
+      data: {
+        slug,
+        title: pkgData.title,
+        destination: pkgData.destination,
+        price: parseFloat(pkgData.price),
+        currency: pkgData.currency || 'INR',
+        duration: pkgData.duration,
+        image: pkgData.image || null,
+        type: pkgData.type,
+        description: pkgData.description || null,
+        rating: parseFloat(pkgData.rating) || 5.0,
+        gallery: pkgData.gallery || [],
+        highlights: pkgData.highlights || [],
+        bookingCount: parseInt(pkgData.bookingCount) || 0,
+        viewCount: parseInt(pkgData.viewCount) || 0
+      }
+    });
+    res.json(newPkg);
+  } catch (err: any) {
+    console.error("Error creating package:", err);
+    res.status(500).json({ error: "Failed to create package", details: err.message });
+  }
+});
+
+// PUT /api/packages/:id - update an existing package (Admin only)
+app.put("/api/packages/:id", isAdmin, async (req, res) => {
+  const { id } = req.params;
+  const pkgData = req.body;
+
+  try {
+    const updatedPkg = await prisma.travelPackage.update({
+      where: { id },
+      data: {
+        title: pkgData.title,
+        slug: pkgData.slug,
+        destination: pkgData.destination,
+        price: parseFloat(pkgData.price),
+        currency: pkgData.currency,
+        duration: pkgData.duration,
+        image: pkgData.image,
+        type: pkgData.type,
+        description: pkgData.description,
+        rating: parseFloat(pkgData.rating),
+        gallery: pkgData.gallery,
+        highlights: pkgData.highlights,
+        bookingCount: parseInt(pkgData.bookingCount),
+        viewCount: parseInt(pkgData.viewCount)
+      }
+    });
+    res.json(updatedPkg);
+  } catch (err: any) {
+    console.error("Error updating package:", err);
+    res.status(500).json({ error: "Failed to update package", details: err.message });
+  }
+});
+
+// DELETE /api/packages/:id - delete a package (Admin only)
+app.delete("/api/packages/:id", isAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.travelPackage.delete({
+      where: { id }
+    });
+    res.json({ success: true, message: "Package deleted successfully" });
+  } catch (err: any) {
+    console.error("Error deleting package:", err);
+    res.status(500).json({ error: "Failed to delete package", details: err.message });
+  }
+});
+
+// GET /api/admin/bookings - fetch all user bookings across the platform (Admin only)
+app.get("/api/admin/bookings", isAdmin, async (req, res) => {
+  try {
+    const allBookings = await prisma.booking.findMany({
+      include: {
+        user: true,
+        package: true,
+        flight: true,
+        hotel: true,
+        addons: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const mappedBookings = allBookings.map(b => ({
+      ...b,
+      email: b.user.email,
+      firstName: b.user.firstName,
+      lastName: b.user.lastName,
+      phone: b.user.phone,
+      packageTitle: b.package.title,
+      packageImage: b.package.image
+    }));
+
+    res.json(mappedBookings);
+  } catch (err: any) {
+    console.error("Error fetching admin bookings:", err);
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  }
+});
+
+// PUT /api/admin/bookings/:id/status - update booking status (Admin only)
+app.put("/api/admin/bookings/:id/status", isAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status || !['Pending', 'Confirmed', 'Cancelled'].includes(status)) {
+    return res.status(400).json({ error: "Invalid status value" });
+  }
+
+  try {
+    const updatedBooking = await prisma.booking.update({
+      where: { id },
+      data: { status },
+      include: {
+        user: true,
+        package: true
+      }
+    });
+
+    res.json({ success: true, booking: updatedBooking });
+  } catch (err: any) {
+    console.error("Error updating booking status:", err);
+    res.status(500).json({ error: "Failed to update booking status" });
+  }
+});
+
+app.post("/api/bookings", async (req, res) => {
   const bookingData = req.body;
   if (!bookingData.firstName || !bookingData.lastName || !bookingData.email) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-  const id = Date.now().toString();
-  const newBooking = { ...bookingData, id, status: 'Pending', createdAt: new Date().toISOString() };
-  const bookings = getBookings();
-  bookings.push(newBooking);
-  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2));
-  res.json({ success: true, message: "Booking details saved successfully", bookingId: id });
+  
+  try {
+    const user = await prisma.user.upsert({
+      where: { email: bookingData.email },
+      update: {
+        name: `${bookingData.firstName || ''} ${bookingData.lastName || ''}`.trim(),
+        firstName: bookingData.firstName,
+        lastName: bookingData.lastName,
+        phone: bookingData.phone,
+        address: bookingData.address,
+        city: bookingData.city,
+        zipCode: bookingData.zipCode,
+      },
+      create: {
+        email: bookingData.email,
+        name: `${bookingData.firstName || ''} ${bookingData.lastName || ''}`.trim(),
+        firstName: bookingData.firstName,
+        lastName: bookingData.lastName,
+        phone: bookingData.phone,
+        address: bookingData.address,
+        city: bookingData.city,
+        zipCode: bookingData.zipCode,
+      }
+    });
+
+    const newBooking = await prisma.booking.create({
+      data: {
+        userId: user.id,
+        packageId: bookingData.packageId,
+        totalAmount: bookingData.totalAmount || 0,
+        currency: bookingData.currency || 'INR',
+        numTravelers: bookingData.numTravelers || 1,
+        selectedVehicle: bookingData.selectedVehicle,
+        status: 'Pending',
+        flight: bookingData.flight ? {
+          create: {
+            airline: bookingData.flight.airline || "TBD",
+            flightNumber: bookingData.flight.flightNumber || "TBD",
+            price: bookingData.flight.price || 0,
+            departureTime: bookingData.flight.departureDate ? new Date(bookingData.flight.departureDate) : null,
+            arrivalTime: bookingData.flight.returnDate ? new Date(bookingData.flight.returnDate) : null,
+          }
+        } : undefined,
+        hotel: bookingData.hotel ? {
+          create: {
+            hotelName: bookingData.hotel.name || "TBD",
+            price: bookingData.hotel.price || 0,
+            roomType: bookingData.hotel.roomType || null,
+            checkIn: bookingData.hotel.checkIn ? new Date(bookingData.hotel.checkIn) : null,
+            checkOut: bookingData.hotel.checkOut ? new Date(bookingData.hotel.checkOut) : null,
+          }
+        } : undefined,
+        addons: bookingData.addons && Array.isArray(bookingData.addons) ? {
+          create: bookingData.addons.map((a: any) => ({
+            addonName: typeof a === 'string' ? a : (a.name || "Unknown Addon"),
+            price: typeof a === 'string' ? 0 : (a.price || 0)
+          }))
+        } : undefined,
+      }
+    });
+    res.json({ success: true, message: "Booking details saved successfully", bookingId: newBooking.id });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to save booking" });
+  }
 });
 
-app.post("/api/update-booking", (req, res) => {
+app.post("/api/update-booking", async (req, res) => {
   const { id, updates } = req.body;
   if (!id || !updates) return res.status(400).json({ error: "ID and updates are required" });
 
-  const bookings = getBookings();
-  const index = bookings.findIndex((b: any) => b.id === id);
-  if (index === -1) return res.status(404).json({ error: "Booking not found" });
-
-  bookings[index] = { ...bookings[index], ...updates };
-  fs.writeFileSync(BOOKINGS_FILE, JSON.stringify(bookings, null, 2));
-  res.json({ success: true });
+  try {
+    await prisma.booking.update({
+      where: { id },
+      data: updates
+    });
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(404).json({ error: "Booking not found or update failed" });
+  }
 });
 
 app.post("/api/send-otp", async (req, res) => {
@@ -208,13 +480,36 @@ app.post("/api/verify-otp", (req, res) => {
   }
 });
 
-app.get("/api/my-bookings", (req, res) => {
+app.get("/api/my-bookings", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: "Email is required" });
 
-  const bookings = getBookings();
-  const userBookings = bookings.filter((b: any) => b.email.toLowerCase() === (email as string).toLowerCase());
-  res.json(userBookings);
+  try {
+    const userBookings = await prisma.booking.findMany({
+      where: { user: { email: { equals: email as string, mode: 'insensitive' } } },
+      include: {
+        user: true,
+        package: true,
+        flight: true,
+        hotel: true,
+        addons: true
+      }
+    });
+
+    const mappedBookings = userBookings.map(b => ({
+      ...b,
+      email: b.user.email,
+      firstName: b.user.firstName,
+      lastName: b.user.lastName,
+      packageTitle: b.package.title,
+      packageImage: b.package.image
+    }));
+    
+    res.json(mappedBookings);
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch bookings" });
+  }
 });
 
 app.post("/api/send-confirmation", async (req, res) => {
@@ -398,6 +693,140 @@ app.post("/api/verify-payment", (req, res) => {
     res.json({ success: true, message: "Payment verified successfully" });
   } else {
     res.status(400).json({ error: "Invalid signature" });
+  }
+});
+
+app.get("/api/reviews/:packageId", async (req, res) => {
+  const { packageId } = req.params;
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { packageId },
+      include: { user: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(reviews);
+  } catch (error: any) {
+    console.error("Failed to fetch reviews:", error);
+    res.status(500).json({ error: "Failed to fetch reviews" });
+  }
+});
+
+app.post("/api/reviews", async (req, res) => {
+  const { packageId, email, rating, comment } = req.body;
+  if (!packageId || !email || !rating) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        packageId,
+        user: { email: { equals: email, mode: 'insensitive' } },
+        status: 'Confirmed'
+      }
+    });
+
+    if (!booking) {
+      return res.status(403).json({ error: "You must have a confirmed booking for this package to leave a review." });
+    }
+
+    const review = await prisma.review.create({
+      data: {
+        packageId,
+        userId: booking.userId,
+        rating,
+        comment
+      },
+      include: { user: true }
+    });
+
+    res.json(review);
+  } catch (error: any) {
+    console.error("Failed to submit review:", error);
+    res.status(500).json({ error: "Failed to submit review" });
+  }
+});
+
+const VALID_EXPENSE_CATEGORIES = ['food', 'transport', 'stay', 'activities', 'other'];
+
+app.post("/api/expenses", async (req, res) => {
+  const { userId, tripLabel, category, amount, currency, note } = req.body;
+
+  if (!userId || !tripLabel || !category || typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({
+      error: "Invalid request",
+      message: "userId, tripLabel, category, and a positive amount are required.",
+    });
+  }
+
+  if (!VALID_EXPENSE_CATEGORIES.includes(category)) {
+    return res.status(400).json({
+      error: "Invalid request",
+      message: `category must be one of: ${VALID_EXPENSE_CATEGORIES.join(', ')}`,
+    });
+  }
+
+  const currencyCode = (currency || 'INR').toUpperCase();
+
+  let amountINR: number;
+  try {
+    amountINR = await convertToINR(amount, currencyCode);
+  } catch (error: any) {
+    console.error("Currency conversion failed:", error);
+    return res.status(502).json({
+      error: "Conversion failed",
+      message: "Could not determine an INR conversion rate. Please try again.",
+    });
+  }
+
+  try {
+    const expense = await prisma.expense.create({
+      data: {
+        userId,
+        tripLabel,
+        category,
+        amount,
+        currency: currencyCode,
+        amountINR,
+        note: note || null,
+      },
+    });
+    res.status(201).json({ success: true, data: expense });
+  } catch (error: any) {
+    console.error("Create expense error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to create expense." });
+  }
+});
+
+app.get("/api/expenses/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const expenses = await prisma.expense.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({ success: true, data: expenses });
+  } catch (error: any) {
+    console.error("Fetch expenses error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to fetch expenses." });
+  }
+});
+
+app.delete("/api/expenses/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const existing = await prisma.expense.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: "Not Found", message: "Expense not found." });
+    }
+
+    await prisma.expense.delete({ where: { id } });
+    res.json({ success: true, message: "Expense deleted." });
+  } catch (error: any) {
+    console.error("Delete expense error:", error);
+    res.status(500).json({ error: "Internal Server Error", message: "Failed to delete expense." });
   }
 });
 

@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Mail, Phone, MapPin, Twitter, Instagram, Linkedin, Facebook } from "lucide-react";
 
 const Contact: React.FC = () => {
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -33,11 +35,11 @@ const Contact: React.FC = () => {
   const validate = () => {
     const newErrors: any = {};
 
-    if (!formData.name.trim()) newErrors.name = "Full name is required";
-    if (!formData.email.trim()) newErrors.email = "Email is required";
+    if (!formData.name.trim()) newErrors.name = t('contact.errorNameRequired');
+    if (!formData.email.trim()) newErrors.email = t('contact.errorEmailRequired');
     if (!validatePhone(formData.phone))
-      newErrors.phone = "Enter valid 10 digit number or +91XXXXXXXXXX";
-    if (!formData.message.trim()) newErrors.message = "Message is required";
+      newErrors.phone = t('contact.errorPhoneInvalid');
+    if (!formData.message.trim()) newErrors.message = t('contact.errorMessageRequired');
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -54,7 +56,7 @@ const Contact: React.FC = () => {
       });
 
       if (response.ok) {
-        setSuccess("Message sent successfully!");
+        setSuccess(t('contact.successMessage'));
         setFormData({ name: "", email: "", phone: "", message: "" });
       }
     } catch (error) {
@@ -69,14 +71,13 @@ const Contact: React.FC = () => {
         {/* Heading */}
         <div className="text-center mb-16">
           <h2 className="text-indigo-400 font-bold tracking-widest uppercase mb-4">
-            Connect
+            {t('contact.connect')}
           </h2>
           <h1 className="text-5xl font-serif font-bold text-white mb-6">
-            Contact Us
+            {t('contact.title')}
           </h1>
           <p className="text-gray-400 max-w-xl mx-auto">
-            Have questions about a package or need custom planning?
-            Our travel experts are standing by.
+            {t('contact.subtitle')}
           </p>
         </div>
 
@@ -90,14 +91,14 @@ const Contact: React.FC = () => {
               {/* Name */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Full Name
+                  {t('contact.fullName')}
                 </label>
                 <input
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   type="text"
-                  placeholder="John Doe"
+                  placeholder={t('contact.fullNamePlaceholder')}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
                 {errors.name && (
@@ -108,14 +109,14 @@ const Contact: React.FC = () => {
               {/* Email */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Email Address
+                  {t('contact.emailAddress')}
                 </label>
                 <input
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   type="email"
-                  placeholder="john@example.com"
+                  placeholder={t('contact.emailPlaceholder')}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
                 {errors.email && (
@@ -126,7 +127,7 @@ const Contact: React.FC = () => {
               {/* Phone */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Phone Number
+                  {t('contact.phoneNumber')}
                 </label>
                 <input
                   name="phone"
@@ -144,13 +145,13 @@ const Contact: React.FC = () => {
               {/* Message */}
               <div>
                 <label className="block text-sm text-gray-400 mb-2">
-                  Your Message
+                  {t('contact.yourMessage')}
                 </label>
                 <textarea
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
-                  placeholder="Tell us about your dream trip..."
+                  placeholder={t('contact.messagePlaceholder')}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white h-32 resize-none focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
                 {errors.message && (
@@ -162,7 +163,7 @@ const Contact: React.FC = () => {
                 onClick={handleSubmit}
                 className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 py-4 rounded-xl font-bold text-white hover:scale-[1.02] transition-all"
               >
-                Send Message
+                {t('contact.sendMessage')}
               </button>
 
               {success && (
@@ -179,7 +180,7 @@ const Contact: React.FC = () => {
 
               <div>
                 <h4 className="text-white font-bold text-xl mb-4">
-                  Direct Contact
+                  {t('contact.directContact')}
                 </h4>
                 <div className="space-y-4 text-gray-400">
                   <p className="flex items-center gap-3">
@@ -193,7 +194,7 @@ const Contact: React.FC = () => {
 
               <div>
                 <h4 className="text-white font-bold text-xl mb-4">
-                  Office HQ
+                  {t('contact.officeHQ')}
                 </h4>
                 <p className="text-gray-400 flex items-start gap-3">
                   <MapPin size={18} />

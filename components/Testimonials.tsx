@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TESTIMONIALS } from '../constants.tsx';
 
 const Testimonials: React.FC = () => {
+  const { t } = useTranslation();
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -16,10 +18,10 @@ const Testimonials: React.FC = () => {
     <section className="py-24 bg-gray-950/50">
       <div className="max-w-7xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-indigo-400 font-bold tracking-widest uppercase mb-4">Community</h2>
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6">Voices of Destinix</h1>
+          <h2 className="text-indigo-400 font-bold tracking-widest uppercase mb-4">{t('testimonials.community')}</h2>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6">{t('testimonials.title')}</h1>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Real stories from travelers who explored the world with our AI-guided intelligence.
+            {t('testimonials.subtitle')}
           </p>
         </div>
 

@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Page } from '../types';
 
 interface CTASectionProps {
@@ -8,6 +9,7 @@ interface CTASectionProps {
 }
 
 const CTASection: React.FC<CTASectionProps> = ({ onNavigate, onRegisterClick }) => {
+  const { t } = useTranslation();
   return (
     <section className="py-24 px-4 bg-gray-950">
       <div className="max-w-7xl mx-auto">
@@ -24,30 +26,30 @@ const CTASection: React.FC<CTASectionProps> = ({ onNavigate, onRegisterClick }) 
 
           <div className="relative z-10 max-w-4xl mx-auto animate-[fadeIn_1s_ease-out]">
             <h2 className="text-4xl md:text-7xl font-bold text-white mb-6 tracking-tight leading-tight">
-              READY TO START<br />YOUR NEXT ADVENTURE?
+              {t('cta.headingLine1')}<br />{t('cta.headingLine2')}
             </h2>
             <p className="text-white/80 text-lg md:text-xl mb-12 max-w-2xl mx-auto leading-relaxed">
-              Join 50,000+ travelers who trust Destinix for their dream vacations. Intelligent planning, curated luxury, and global support.
+              {t('cta.subheading')}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button 
+              <button
                 onClick={() => onNavigate(Page.Packages)}
                 className="w-full sm:w-auto bg-white text-[#0088cc] px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-all shadow-xl"
               >
-                Explore Packages
+                {t('cta.explorePackages')}
               </button>
-              <button 
+              <button
                 onClick={() => onNavigate(Page.Planner)}
                 className="w-full sm:w-auto bg-white/10 text-white border-2 border-white/20 px-10 py-5 rounded-2xl font-bold text-lg hover:bg-white/20 transition-all backdrop-blur-md"
               >
-                Plan with AI
+                {t('cta.planWithAI')}
               </button>
-              <button 
+              <button
                 onClick={onRegisterClick}
                 className="w-full sm:w-auto bg-indigo-600 text-white px-10 py-5 rounded-2xl font-bold text-lg hover:bg-indigo-500 transition-all shadow-xl"
               >
-                Register Now
+                {t('cta.registerNow')}
               </button>
             </div>
           </div>

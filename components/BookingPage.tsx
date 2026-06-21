@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { TravelPackage, User } from '../types';
 import { formatCurrency, calculateInr } from '../utils/currency';
@@ -29,12 +30,13 @@ interface BookingPageProps {
 
 const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   if (!pkg) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-950 text-white">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Package not found</h2>
-          <button onClick={onBack} className="text-indigo-400 hover:text-indigo-300">Go Back</button>
+          <h2 className="text-2xl font-bold mb-4">{t('bookingPage.packageNotFound')}</h2>
+          <button onClick={onBack} className="text-indigo-400 hover:text-indigo-300">{t('bookingPage.goBack')}</button>
         </div>
       </div>
     );
@@ -141,11 +143,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
   ];
 
   const addons = [
-    { id: 'flight', label: 'Flight Booking', price: Math.round(450 * 1.5), icon: <Plane className="w-5 h-5" />, desc: 'Business class upgrade with lounge access' },
-    { id: 'car', label: 'Car Rental', price: Math.round(120 * 1.5), icon: <Car className="w-5 h-5" />, desc: 'Chauffeur driven luxury sedan for all transfers' },
-    { id: 'bike', label: 'Bike Rental', price: Math.round(45 * 1.5), icon: <Bike className="w-5 h-5" />, desc: 'Premium mountain bikes for local exploration' },
-    { id: 'hotel', label: 'Suite Upgrade', price: Math.round(300 * 1.5), icon: <Hotel className="w-5 h-5" />, desc: 'Upgrade to Presidential Suite with ocean view' },
-    { id: 'activities', label: 'VIP Activities', price: Math.round(200 * 1.5), icon: <Sparkles className="w-5 h-5" />, desc: 'Skip-the-line access to all major attractions' },
+    { id: 'flight', label: t('bookingPage.addonFlightLabel'), price: Math.round(450 * 1.5), icon: <Plane className="w-5 h-5" />, desc: t('bookingPage.addonFlightDesc') },
+    { id: 'car', label: t('bookingPage.addonCarLabel'), price: Math.round(120 * 1.5), icon: <Car className="w-5 h-5" />, desc: t('bookingPage.addonCarDesc') },
+    { id: 'bike', label: t('bookingPage.addonBikeLabel'), price: Math.round(45 * 1.5), icon: <Bike className="w-5 h-5" />, desc: t('bookingPage.addonBikeDesc') },
+    { id: 'hotel', label: t('bookingPage.addonHotelLabel'), price: Math.round(300 * 1.5), icon: <Hotel className="w-5 h-5" />, desc: t('bookingPage.addonHotelDesc') },
+    { id: 'activities', label: t('bookingPage.addonActivitiesLabel'), price: Math.round(200 * 1.5), icon: <Sparkles className="w-5 h-5" />, desc: t('bookingPage.addonActivitiesDesc') },
   ];
 
   const toggleAddon = (id: string) => {
@@ -201,13 +203,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
 
   const sendOtp = async () => {
     if (!userDetails.email) {
-      showToast("Please enter email first", "error");
+      showToast(t('bookingPage.toastEnterEmailFirst'), "error");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(userDetails.email)) {
-      showToast("Enter valid email", "error");
+      showToast(t('bookingPage.toastEnterValidEmail'), "error");
       return;
     }
 
@@ -226,20 +228,20 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
       if (res.ok && data.success) {
         setOtpSent(true);
         setIsDemo(data.isDemo);
-        showToast("Verification code sent!", "success");
+        showToast(t('bookingPage.toastOtpSent'), "success");
       } else {
-        const errorMsg = data.details ? `${data.error}: ${data.details}` : (data.error || "Failed to send OTP");
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : (data.error || t('bookingPage.toastOtpFailed'));
         showToast(errorMsg, "error");
       }
       } catch (err) {
       console.error(err);
-      showToast("Server error sending OTP", "error");
+      showToast(t('bookingPage.toastServerErrorOtp'), "error");
     }
   };
 
   const verifyOtp = async () => {
     if (enteredOtp.length !== 6) {
-      setOtpError("Please enter 6-digit OTP");
+      setOtpError(t('bookingPage.toastEnter6DigitOtp'));
       return;
     }
 
@@ -258,13 +260,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
       if (res.ok && data.success) {
         setIsOtpVerified(true);
         setOtpError('');
-        showToast("Email verified successfully!", "success");
+        showToast(t('bookingPage.toastEmailVerified'), "success");
       } else {
-        setOtpError(data.error || "Invalid OTP. Please try again.");
+        setOtpError(data.error || t('bookingPage.toastInvalidOtp'));
       }
     } catch (err) {
       console.error(err);
-      setOtpError("Verification failed. Try again.");
+      setOtpError(t('bookingPage.toastVerificationFailed'));
     }
   };
 
@@ -296,33 +298,33 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
     if (e) e.preventDefault();
     
     if (!selectedVehicle) {
-      showToast("Please select a travel option!", "error");
+      showToast(t('bookingPage.toastSelectTravelOption'), "error");
       return false;
     }
 
     if (selectedVehicle === 'flight') {
       if (!flightDetails.departure || !flightDetails.departureDate) {
-        showToast("Fill Up the Details Form Fisrt (Enter departure city & date!)", "error");
+        showToast(t('bookingPage.toastFillFlightDetails'), "error");
         return false;
       }
     } else if (selectedVehicle === 'car') {
       if (!carDetails.pickupDate) {
-        showToast("Select a pickup date!", "error");
+        showToast(t('bookingPage.toastSelectPickupDate'), "error");
         return false;
       }
     } else if (selectedVehicle === 'bike') {
       if (!bikeTermsAccepted) {
-        showToast("Accept rental terms!", "error");
+        showToast(t('bookingPage.toastAcceptRentalTerms'), "error");
         return false;
       }
       if (!bikeDetails.bikeId || !bikeDetails.startDate) {
-        showToast("Select bike & start date!", "error");
+        showToast(t('bookingPage.toastSelectBikeAndDate'), "error");
         return false;
       }
     }
 
     if (!isOtpVerified || !userDetails.firstName || !userDetails.lastName || !userDetails.address || !userDetails.phone || !userDetails.city || !userDetails.zipCode) {
-      showToast("Please fill all details!", "error");
+      showToast(t('bookingPage.toastFillAllDetails'), "error");
       return false;
     }
 
@@ -352,15 +354,15 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
         bookingIdRef.current = data.bookingId;
         setBookingId(data.bookingId);
         setIsDetailsSaved(true);
-        showToast("Details saved successfully!", "success");
+        showToast(t('bookingPage.toastDetailsSaved'), "success");
         return true;
       } else {
-        showToast('Failed to save booking details. Please try again.', "error");
+        showToast(t('bookingPage.toastSaveFailed'), "error");
         return false;
       }
     } catch (error) {
       console.error('Error saving details:', error);
-      showToast('An error occurred. Please try again.', "error");
+      showToast(t('bookingPage.toastGenericError'), "error");
       return false;
     } finally {
       setIsProcessing(false);
@@ -379,7 +381,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
 
   const downloadReceipt = async () => {
   if (!paymentData) {
-    showToast("No payment data found", "error");
+    showToast(t('bookingPage.toastNoPaymentData'), "error");
     return;
   }
 
@@ -397,7 +399,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
 
   } catch (error) {
     console.error("Receipt download failed:", error);
-    showToast("Failed to download receipt", "error");
+    showToast(t('bookingPage.toastReceiptFailed'), "error");
   }
 };
 
@@ -451,7 +453,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
           className="flex items-center text-gray-400 hover:text-white transition-colors mb-8 group"
         >
           <ChevronLeft className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" />
-          Back to Package
+          {t('bookingPage.backToPackage')}
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -459,8 +461,8 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
           <div className="lg:col-span-8 space-y-12">
             <section>
               <div className="mb-10">
-                <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-4 tracking-tight">Complete Your Booking</h1>
-                <p className="text-gray-400 text-lg max-w-2xl">Review your journey details and select any premium add-ons to enhance your experience.</p>
+                <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-4 tracking-tight">{t('bookingPage.title')}</h1>
+                <p className="text-gray-400 text-lg max-w-2xl">{t('bookingPage.subtitle')}</p>
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-[40px] p-8 mb-12">
@@ -511,7 +513,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                           className="bg-transparent text-white text-sm outline-none cursor-pointer"
                         >
                           {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                            <option key={n} value={n} className="bg-gray-900">{n} {n === 1 ? 'Traveler' : 'Travelers'}</option>
+                            <option key={n} value={n} className="bg-gray-900">{n} {n === 1 ? t('bookingPage.traveler') : t('bookingPage.travelers')}</option>
                           ))}
                         </select>
                       </div>
@@ -525,10 +527,10 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white flex items-center">
                   <Car className="w-5 h-5 mr-2 text-indigo-400" />
-                  Select Your Travel Option
+                  {t('bookingPage.selectTravelOption')}
                 </h3>
                 <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                  Mandatory Selection
+                  {t('bookingPage.mandatorySelection')}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
@@ -574,7 +576,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                   <div>
                     <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                       <Sparkles className="w-5 h-5 mr-2 text-indigo-400" />
-                      Premium Add-ons (Optional)
+                      {t('bookingPage.premiumAddonsOptional')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {addons.filter(a => !['flight', 'car', 'bike'].includes(a.id)).map((addon) => (
@@ -610,18 +612,18 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                       {selectedVehicle === 'flight' ? <Plane className="w-5 h-5 mr-2 text-indigo-400" /> : 
                        selectedVehicle === 'car' ? <Car className="w-5 h-5 mr-2 text-indigo-400" /> : 
                        <Bike className="w-5 h-5 mr-2 text-indigo-400" />}
-                      {selectedVehicle.charAt(0).toUpperCase() + selectedVehicle.slice(1)} Customization & Traveler Details
+                      {t('bookingPage.customizationAndDetails', { vehicle: selectedVehicle.charAt(0).toUpperCase() + selectedVehicle.slice(1) })}
                     </h3>
                     <div className="bg-white/5 border border-white/10 rounded-[32px] p-8 space-y-8">
                       {/* Traveler Information (Common) */}
                       <div className="space-y-6">
                         <div className="flex items-center space-x-2 mb-4">
                           <UserIcon className="w-4 h-4 text-indigo-400" />
-                          <h4 className="text-sm font-bold text-white uppercase tracking-widest">Traveler Information</h4>
+                          <h4 className="text-sm font-bold text-white uppercase tracking-widest">{t('bookingPage.travelerInformation')}</h4>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">First Name</label>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.firstName')}</label>
                             <div className="relative">
                               <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                               <input 
@@ -634,7 +636,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Last Name</label>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.lastName')}</label>
                             <div className="relative">
                               <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                               <input 
@@ -649,7 +651,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Email Address</label>
+                          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.emailAddress')}</label>
                           <div className="flex gap-3">
                             <div className="relative flex-1">
                               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -676,7 +678,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                                 disabled={!userDetails.email}
                                 className="px-6 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl text-white text-sm font-bold transition-all whitespace-nowrap"
                               >
-                                {otpSent ? 'Change' : 'Send OTP'}
+                                {otpSent ? t('bookingPage.change') : t('bookingPage.sendOtp')}
                               </button>
                             )}
                           </div>
@@ -689,15 +691,15 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                             className="bg-indigo-500/5 border border-indigo-500/20 rounded-2xl p-6 space-y-4"
                           >
                             <div className="flex justify-between items-center">
-                              <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Verification Code</label>
+                              <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{t('bookingPage.verificationCode')}</label>
                               <span className="text-[10px] text-gray-500 italic">
-                                {`Sent to ${userDetails.email}`}
+                                {t('bookingPage.sentTo', { email: userDetails.email })}
                               </span>
                             </div>
                             <div className="flex gap-3">
                               <input
                                 type="text"
-                                placeholder="6-digit code"
+                                placeholder={t('bookingPage.sixDigitCode')}
                                 value={enteredOtp}
                                 onChange={(e) => setEnteredOtp(e.target.value)}
                                 className="flex-1 bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white text-center text-xl font-mono tracking-widest focus:border-indigo-500 outline-none transition-all"
@@ -708,17 +710,17 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                                 onClick={verifyOtp}
                                 className="px-8 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white text-sm font-bold transition-all"
                               >
-                                Verify
+                                {t('bookingPage.verify')}
                               </button>
                             </div>
                             <div className="flex justify-between items-center px-1">
-                              <p className="text-xs text-gray-500 italic">Didn't receive code?</p>
-                              <button 
-                                type="button" 
+                              <p className="text-xs text-gray-500 italic">{t('bookingPage.didntReceiveCode')}</p>
+                              <button
+                                type="button"
                                 onClick={sendOtp}
                                 className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
                               >
-                                Resend Code
+                                {t('bookingPage.resendCode')}
                               </button>
                             </div>
                             {otpError && (
@@ -729,7 +731,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Phone Number</label>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.phoneNumber')}</label>
                             <div className="relative">
                               <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                               <input 
@@ -754,7 +756,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                             {phoneError && <p className="text-red-500 text-[10px] mt-1 ml-2">{phoneError}</p>}
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">City</label>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.city')}</label>
                             <div className="relative">
                               <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                               <input 
@@ -770,20 +772,20 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div className="md:col-span-2 space-y-2">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Address</label>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.address')}</label>
                             <div className="relative">
                               <Home className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                              <input 
+                              <input
                                 type="text"
                                 value={userDetails.address}
                                 onChange={(e) => setUserDetails({...userDetails, address: e.target.value})}
                                 className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-indigo-500 outline-none transition-all"
-                                placeholder="Flat No, Street, Landmark..."
+                                placeholder={t('bookingPage.addressPlaceholder')}
                               />
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Zip Code</label>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.zipCode')}</label>
                             <input 
                               type="text" 
                               value={userDetails.zipCode}
@@ -800,39 +802,39 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         <div className="pt-8 border-t border-white/5 space-y-8">
                           <div className="flex items-center space-x-2 mb-4">
                             <Plane className="w-4 h-4 text-indigo-400" />
-                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">Flight Customization</h4>
+                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">{t('bookingPage.flightCustomization')}</h4>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Departure City</label>
+                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.departureCity')}</label>
                               <div className="relative">
                                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                <input 
-                                  type="text" 
+                                <input
+                                  type="text"
                                   value={flightDetails.departure}
                                   onChange={(e) => setFlightDetails({...flightDetails, departure: e.target.value})}
                                   className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-indigo-500 outline-none transition-all"
-                                  placeholder="From where?"
+                                  placeholder={t('bookingPage.departureCityPlaceholder')}
                                 />
                               </div>
                             </div>
                             <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Arrival City</label>
+                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.arrivalCity')}</label>
                               <div className="relative">
                                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                <input 
-                                  type="text" 
+                                <input
+                                  type="text"
                                   value={flightDetails.arrival}
                                   onChange={(e) => setFlightDetails({...flightDetails, arrival: e.target.value})}
                                   className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:border-indigo-500 outline-none transition-all"
-                                  placeholder="Destination"
+                                  placeholder={t('bookingPage.arrivalCityPlaceholder')}
                                 />
                               </div>
                             </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
                             <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Departure Date</label>
+                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.departureDate')}</label>
                               <input 
                                 type="date" 
                                 value={flightDetails.departureDate}
@@ -843,13 +845,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
 
                           </div>
                           <div className="space-y-4">
-                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Cabin Class</label>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.cabinClass')}</label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                               {[
-                                { name: 'Economy', price: 0, desc: 'Standard seating' },
-                                { name: 'Premium Economy', price: 150, desc: 'Extra legroom & snacks' },
-                                { name: 'Business', price: 450, desc: 'Flat-bed & lounge' },
-                                { name: 'First Class', price: 1000, desc: 'Ultimate luxury' }
+                                { name: 'Economy', price: 0, label: t('bookingPage.classEconomy'), desc: t('bookingPage.classEconomyDesc') },
+                                { name: 'Premium Economy', price: 150, label: t('bookingPage.classPremiumEconomy'), desc: t('bookingPage.classPremiumEconomyDesc') },
+                                { name: 'Business', price: 450, label: t('bookingPage.classBusiness'), desc: t('bookingPage.classBusinessDesc') },
+                                { name: 'First Class', price: 1000, label: t('bookingPage.classFirst'), desc: t('bookingPage.classFirstDesc') }
                               ].map((cls) => (
                                 <button
                                   key={cls.name}
@@ -864,7 +866,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                                   <div className={`text-sm font-bold mb-1 transition-colors ${
                                     flightDetails.class === cls.name ? 'text-white' : 'text-gray-400 group-hover:text-white'
                                   }`}>
-                                    {cls.name}
+                                    {cls.label}
                                   </div>
                                   <p className="text-[10px] text-gray-500 mb-2">{cls.desc}</p>
                                   {cls.price > 0 && (
@@ -888,11 +890,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         <div className="pt-8 border-t border-white/5 space-y-8">
                           <div className="flex items-center space-x-2 mb-4">
                             <Car className="w-4 h-4 text-indigo-400" />
-                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">Car Rental Details</h4>
+                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">{t('bookingPage.carRentalDetails')}</h4>
                           </div>
                           <div className="grid grid-cols-1 gap-6">
                             <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Pickup Date</label>
+                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.pickupDate')}</label>
                               <input 
                                 type="date" 
                                 value={carDetails.pickupDate}
@@ -908,21 +910,21 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         <div className="pt-8 border-t border-white/5 space-y-6">
                            <div className="flex items-center space-x-2 mb-4">
                             <Info className="w-4 h-4 text-indigo-400" />
-                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">Rental Terms & Conditions</h4>
+                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">{t('bookingPage.rentalTermsConditions')}</h4>
                           </div>
                           <div className="bg-black/40 border border-white/10 rounded-2xl p-6 text-sm text-gray-400 space-y-4 max-h-60 overflow-y-auto">
-                            <p>1. The rider must be at least 21 years of age and hold a valid driving license.</p>
-                            <p>2. A security deposit may be required at the time of pickup.</p>
-                            <p>3. The vehicle must be returned with the same fuel level as provided.</p>
-                            <p>4. Any damage to the vehicle during the rental period is the responsibility of the hirer.</p>
-                            <p>5. Insurance covers third-party liability only unless premium protection is selected.</p>
-                            <p>6. Late returns will incur additional hourly charges.</p>
+                            <p>{t('bookingPage.termsLine1')}</p>
+                            <p>{t('bookingPage.termsLine2')}</p>
+                            <p>{t('bookingPage.termsLine3')}</p>
+                            <p>{t('bookingPage.termsLine4')}</p>
+                            <p>{t('bookingPage.termsLine5')}</p>
+                            <p>{t('bookingPage.termsLine6')}</p>
                           </div>
                           <button
                             onClick={() => setBikeTermsAccepted(true)}
                             className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl transition-all"
                           >
-                            I Agree to the Terms
+                            {t('bookingPage.agreeToTerms')}
                           </button>
                         </div>
                       )}
@@ -931,7 +933,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         <div className="pt-8 border-t border-white/5 space-y-8">
                            <div className="flex items-center space-x-2 mb-4">
                             <Bike className="w-4 h-4 text-indigo-400" />
-                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">Select Your Bike</h4>
+                            <h4 className="text-sm font-bold text-white uppercase tracking-widest">{t('bookingPage.selectYourBike')}</h4>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {bikeOptions.map(bike => (
@@ -945,7 +947,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                                 <img src={bike.image} alt={bike.name} className="w-full h-32 object-cover rounded-xl mb-3" />
                                 <div className="flex justify-between items-start mb-1">
                                   <h5 className="font-bold text-white text-sm">{bike.name}</h5>
-                                  <span className="text-indigo-400 font-bold text-xs">+{formatCurrency(bike.price, pkg.currency)}/day</span>
+                                  <span className="text-indigo-400 font-bold text-xs">+{formatCurrency(bike.price, pkg.currency)}{t('bookingPage.perDay')}</span>
                                 </div>
                                 <p className="text-[10px] text-gray-500">{bike.type}</p>
                                 {bikeDetails.bikeId === bike.id && (
@@ -959,7 +961,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Rental Start Date</label>
+                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.rentalStartDate')}</label>
                               <input 
                                 type="date" 
                                 value={bikeDetails.startDate}
@@ -968,13 +970,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Rental Duration (Days)</label>
-                              <select 
+                              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.rentalDurationDays')}</label>
+                              <select
                                 value={bikeDetails.duration}
                                 onChange={(e) => setBikeDetails({...bikeDetails, duration: parseInt(e.target.value)})}
                                 className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-4 text-white focus:border-indigo-500 outline-none transition-all appearance-none"
                               >
-                                {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n} Days</option>)}
+                                {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n} {t('bookingPage.days')}</option>)}
                               </select>
                             </div>
                           </div>
@@ -987,7 +989,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
               <div className="pt-12 border-t border-white/5">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                   <Hotel className="w-5 h-5 mr-2 text-indigo-400" />
-                  Hotel Selection (Optional If Wants Private Stay)
+                  {t('bookingPage.hotelSelectionOptional')}
                 </h3>
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1013,7 +1015,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                           </div>
                           <div className="flex items-center space-x-2">
                             <span className="text-amber-400 text-[10px] font-bold">★ {hotel.rating}</span>
-                            <span className="text-[10px] text-gray-500">Luxury Stay</span>
+                            <span className="text-[10px] text-gray-500">{t('bookingPage.luxuryStay')}</span>
                           </div>
                         </div>
                       </button>
@@ -1023,7 +1025,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                   <div className="bg-white/5 border border-white/10 rounded-[32px] p-8">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Check-in</label>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.checkIn')}</label>
                         <input 
                           type="date" 
                           value={hotelDetails.checkIn}
@@ -1032,7 +1034,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Check-out</label>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.checkOut')}</label>
                         <input 
                           type="date" 
                           value={hotelDetails.checkOut}
@@ -1041,13 +1043,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">Guests</label>
-                        <select 
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest ml-2">{t('bookingPage.guests')}</label>
+                        <select
                           value={hotelDetails.guests}
                           onChange={(e) => setHotelDetails({...hotelDetails, guests: parseInt(e.target.value)})}
                           className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 px-4 text-white focus:border-indigo-500 outline-none transition-all appearance-none"
                         >
-                          {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n} Guests</option>)}
+                          {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n} {t('bookingPage.guests')}</option>)}
                         </select>
                       </div>
                     </div>
@@ -1062,7 +1064,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
               <section className="pt-12 border-t border-white/5">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                   <ShieldCheck className="w-5 h-5 mr-2 text-emerald-400" />
-                  Travel Protection
+                  {t('bookingPage.travelProtection')}
                 </h3>
                 <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-[32px] p-6 flex items-center justify-between">
                   <div className="flex items-center">
@@ -1070,11 +1072,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                       <ShieldCheck className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="text-white font-bold">Destinix Elite Care</h4>
-                      <p className="text-xs text-gray-500">Comprehensive medical & trip cancellation coverage included.</p>
+                      <h4 className="text-white font-bold">{t('bookingPage.eliteCareTitle')}</h4>
+                      <p className="text-xs text-gray-500">{t('bookingPage.eliteCareDesc')}</p>
                     </div>
                   </div>
-                  <span className="text-emerald-400 font-bold text-sm uppercase tracking-widest">Included</span>
+                  <span className="text-emerald-400 font-bold text-sm uppercase tracking-widest">{t('bookingPage.included')}</span>
                 </div>
               </section>
             )}
@@ -1088,40 +1090,40 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                 
                 <h3 className="text-xl font-bold text-white mb-8 flex items-center">
                   <Wallet className="w-5 h-5 mr-3 text-indigo-400" />
-                  Price Summary
+                  {t('bookingPage.priceSummary')}
                 </h3>
 
                 <div className="space-y-4 mb-8">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Base Package (x{numTravelers})</span>
+                    <span className="text-gray-500">{t('bookingPage.basePackage', { count: numTravelers })}</span>
                     <span className="text-white font-bold">{formatCurrency(pricing.base, pkg.currency)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Taxes & Fees</span>
+                    <span className="text-gray-500">{t('bookingPage.taxesFees')}</span>
                     <span className="text-white font-bold">{formatCurrency(pricing.taxes, pkg.currency)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Service Charge</span>
+                    <span className="text-gray-500">{t('bookingPage.serviceCharge')}</span>
                     <span className="text-white font-bold">{formatCurrency(pricing.service, pkg.currency)}</span>
                   </div>
 
                   {selectedVehicle && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Vehicle Charge ({addons.find(a => a.id === selectedVehicle)?.label || "Vehicle"})</span>
+                      <span className="text-gray-500">{t('bookingPage.vehicleCharge', { vehicle: addons.find(a => a.id === selectedVehicle)?.label || t('bookingPage.vehicleFallback') })}</span>
                       <span className="text-white font-bold">+{formatCurrency(pricing.vehicleCharge, pkg.currency)}</span>
                     </div>
                   )}
 
                   {pricing.classSurcharge > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Cabin Upgrade ({flightDetails.class})</span>
+                      <span className="text-gray-500">{t('bookingPage.cabinUpgrade', { class: flightDetails.class })}</span>
                       <span className="text-white font-bold">+{formatCurrency(pricing.classSurcharge, pkg.currency)}</span>
                     </div>
                   )}
-                  
+
                   {selectedAddons.length > 0 && (
                     <div className="pt-4 border-t border-white/5 space-y-3">
-                      <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Add-ons</p>
+                      <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">{t('bookingPage.addOns')}</p>
                       {selectedAddons.map(id => {
                         const addon = addons.find(a => a.id === id);
                         return (
@@ -1137,8 +1139,8 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                   <div className="pt-8 border-t border-white/10">
                     <div className="flex justify-between items-end mb-2">
                       <div>
-                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total Amount</p>
-                        <p className="text-xs text-emerald-400 font-medium">All-Inclusive</p>
+                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t('bookingPage.totalAmount')}</p>
+                        <p className="text-xs text-emerald-400 font-medium">{t('bookingPage.allInclusive')}</p>
                       </div>
                       <div className="text-right">
                         <span className="text-3xl font-bold text-white">{formatCurrency(pricing.total, pkg.currency)}</span>
@@ -1147,7 +1149,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                     {pkg.currency !== 'INR' && (
                       <div className="text-right">
                         <span className="text-sm text-indigo-400 font-bold">
-                          (₹{calculateInr(pricing.total, pkg.currency).toLocaleString()} approx.)
+                          {t('bookingPage.approx', { amount: calculateInr(pricing.total, pkg.currency).toLocaleString() })}
                         </span>
                       </div>
                     )}
@@ -1165,12 +1167,12 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
                   ) : isDetailsSaved ? (
                     <>
-                      Pay Now
+                      {t('bookingPage.payNow')}
                       <CreditCard className="w-5 h-5 ml-2 transform group-hover:scale-110 transition-transform" />
                     </>
                   ) : (
                     <>
-                      Proceed to Payment
+                      {t('bookingPage.proceedToPayment')}
                       <ArrowRight className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
@@ -1181,34 +1183,34 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                     <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                       <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">Booking Confirmed!</h3>
+                    <h3 className="text-2xl font-bold text-white mb-2">{t('bookingPage.bookingConfirmed')}</h3>
                     <p className="text-gray-400 text-sm mb-8">
-                      Your adventure to {pkg.destination} is officially confirmed. A confirmation email with your receipt has been sent.
+                      {t('bookingPage.confirmedMessage', { destination: pkg.destination })}
                     </p>
 
                     <div className="bg-white/5 rounded-2xl p-6 text-left space-y-4 mb-8">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Trip</span>
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.trip')}</span>
                         <span className="text-sm text-white font-bold">{pkg.title}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Travelers</span>
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.travelers')}</span>
                         <span className="text-sm text-white font-bold">{numTravelers}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Vehicle</span>
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.vehicle')}</span>
                         <span className="text-sm text-white font-bold capitalize">{selectedVehicle}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Date</span>
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.date')}</span>
                         <span className="text-sm text-white font-bold">{paymentData?.date}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Amount</span>
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.amount')}</span>
                         <span className="text-sm text-emerald-400 font-bold">{formatCurrency(pricing.total, pkg.currency)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">Payment ID</span>
+                        <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.paymentId')}</span>
                         <span className="text-sm text-indigo-400 font-mono">{paymentData?.paymentId}</span>
                       </div>
                     </div>
@@ -1218,13 +1220,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         onClick={downloadReceipt}
                         className="bg-white/10 hover:bg-white/20 py-4 rounded-xl text-white font-bold transition-all flex items-center justify-center"
                       >
-                        Receipt
+                        {t('bookingPage.receipt')}
                       </button>
                       <button
                         onClick={() => navigate('/profile')}
                         className="bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl text-white font-bold transition-all"
                       >
-                        Go to Profile
+                        {t('bookingPage.goToProfile')}
                       </button>
                     </div>
                   </div>
@@ -1236,7 +1238,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                   <Info className="w-5 h-5" />
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  Your payment is secured with 256-bit SSL encryption. Cancellation is free up to 48 hours before departure.
+                  {t('bookingPage.securityNote')}
                 </p>
               </div>
             </div>
@@ -1276,13 +1278,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
             >
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-lg">DestiniX Secure Payment</h3>
+                <h3 className="font-bold text-lg">{t('bookingPage.securePayment')}</h3>
                 <button onClick={() => setShowFakeRazorpay(false)}>✕</button>
               </div>
 
               {/* Amount */}
               <div className="mb-6">
-                <p className="text-sm text-gray-500">Payable Amount</p>
+                <p className="text-sm text-gray-500">{t('bookingPage.payableAmount')}</p>
                 <p className="text-2xl font-bold">
                   {formatCurrency(pricing.total, pkg.currency)}
                 </p>
@@ -1385,7 +1387,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                     setIsPaying(false);
 
                     // ✅ SHOW SUCCESS TOAST IMMEDIATELY
-                    showToast("Payment Successful! Confirmation email sent.", "success");
+                    showToast(t('bookingPage.toastPaymentSuccess'), "success");
 
                     // ⬇️ Run email in background
                     setTimeout(async () => {
@@ -1428,11 +1430,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                 }}
                 className="w-full mt-6 bg-indigo-600 text-white py-3 rounded-xl font-bold"
               >
-                {isPaying ? "Processing..." : "Pay Now"}
+                {isPaying ? t('bookingPage.processing') : t('bookingPage.payNow')}
               </button>
 
               <p className="text-xs text-gray-400 mt-4 text-center">
-                🔒 Secured by Destinix (Simulation Mode)
+                {t('bookingPage.simulationNote')}
               </p>
             </motion.div>
           </motion.div>
