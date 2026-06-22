@@ -188,3 +188,15 @@ export enum Page {
   Contact = 'contact',
   Admin = 'admin'
 }
+
+export interface Destination {
+  id: string;
+  name: string;
+  description: string;
+  attractions: string[];
+  foodGuide: string[];
+  transportation: string;
+  safetyInfo: string;
+  photographySpots: string[];
+  travelTips: string[];
+}
