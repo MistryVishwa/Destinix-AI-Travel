@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getDestinationById } from '../../services/destinationService';
-import { getGeminiRecommendations } from '../../services/geminiService';
+import { getGeminiRecommendations } from '../services/geminiDestinationService';
 import { getWeatherByDestination } from '../../services/weatherService';
 import { chatWithGemini } from '../../services/chatService';
 
@@ -8,7 +8,7 @@ const router = Router();
 
 // GET destination details
 router.get('/api/destination-guide/:destId', async (req: Request, res: Response) => {
-  const { destId } = req.params;
+  const destId = req.params.destId as string;
   try {
     const data = await getDestinationById(destId);
     if (!data) return res.status(404).json({ error: 'Destination not found' });
@@ -21,7 +21,7 @@ router.get('/api/destination-guide/:destId', async (req: Request, res: Response)
 
 // POST Gemini recommendations
 router.post('/api/destination-guide/:destId/recommendations', async (req: Request, res: Response) => {
-  const { destId } = req.params;
+  const destId = req.params.destId as string;
   try {
     const recs = await getGeminiRecommendations(destId);
     res.json({ recommendations: recs });
@@ -33,7 +33,7 @@ router.post('/api/destination-guide/:destId/recommendations', async (req: Reques
 
 // GET weather info
 router.get('/api/destination-guide/:destId/weather', async (req: Request, res: Response) => {
-  const { destId } = req.params;
+  const destId = req.params.destId as string;
   try {
     const weather = await getWeatherByDestination(destId);
     res.json(weather);
@@ -45,7 +45,7 @@ router.get('/api/destination-guide/:destId/weather', async (req: Request, res: R
 
 // POST chat endpoint
 router.post('/api/destination-guide/:destId/chat', async (req: Request, res: Response) => {
-  const { destId } = req.params;
+  const destId = req.params.destId as string;
   const { messages } = req.body; // expecting array of {role, content}
   try {
     const reply = await chatWithGemini(destId, messages);
