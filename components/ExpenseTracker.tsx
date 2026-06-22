@@ -127,7 +127,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ userId }) => {
       {/* Category breakdown */}
       <div className="flex flex-wrap gap-2 mb-8">
         {Object.entries(categoryBreakdown)
-          .filter(([, value]) => value > 0)
+          .filter(([, value]) => (value as number) > 0)
           .map(([cat, value]) => {
             const meta = CATEGORY_LABELS[cat as ExpenseCategory];
             return (
@@ -135,7 +135,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ userId }) => {
                 key={cat}
                 className={`${meta.color} text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 font-medium`}
               >
-                {meta.icon} {meta.label}: {formatCurrency(value, 'INR')}
+                {meta.icon} {meta.label}: {formatCurrency(value as number, 'INR')}
               </span>
             );
           })}

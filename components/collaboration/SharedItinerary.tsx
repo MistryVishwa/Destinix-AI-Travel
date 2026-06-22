@@ -24,7 +24,7 @@ export const SharedItinerary: React.FC<SharedItineraryProps> = ({ groupId, userR
   const canEdit = userRole === "OWNER" || userRole === "EDITOR";
 
   // Compute unique days in the itinerary
-  const uniqueDays = Array.from(new Set(itinerary.map((item) => item.dayNumber))).sort((a, b) => a - b);
+  const uniqueDays = Array.from(new Set(itinerary.map((item) => item.dayNumber as number))).sort((a: number, b: number) => a - b);
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
