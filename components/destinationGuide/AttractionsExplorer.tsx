@@ -1,6 +1,5 @@
 // AttractionsExplorer.tsx
 import React from 'react';
-import { DestinationInfo } from '../../types';
 
 interface Props {
   destination: string;

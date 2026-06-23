@@ -1,5 +1,6 @@
 // DestinationAssistant.tsx
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { useDestinationChat } from '../../hooks/destinationGuide/useDestinationChat';
 
 /**
@@ -8,7 +9,8 @@ import { useDestinationChat } from '../../hooks/destinationGuide/useDestinationC
  */
 const DestinationAssistant: React.FC = () => {
   const [input, setInput] = useState('');
-  const { messages, sendMessage, isLoading } = useDestinationChat();
+  const { destId } = useParams<{ destId: string }>();
+  const { messages, sendMessage, isLoading } = useDestinationChat(destId ?? '');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
