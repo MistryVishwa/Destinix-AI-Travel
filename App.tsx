@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Routes, Route, useNavigate, useParams, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams, useLocation, Navigate, useSearchParams } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { Page, User, TravelPackage } from './types';
 import Navbar from './components/Navbar';
@@ -88,7 +88,8 @@ const App: React.FC = () => {
   }, [location.pathname]);
 
   const [packages, setPackages] = useState<TravelPackage[]>(MOCK_PACKAGES);
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeCategory = searchParams.get('category') || 'All';
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilters, setSearchFilters] = useState<any>({});
   const [user, setUser] = useState<User | null>(() => getCurrentUser());
@@ -264,7 +265,7 @@ const App: React.FC = () => {
 
   const handleCategoryChange = (cat: string) => {
     setIsLoading(true);
-    setActiveCategory(cat);
+    setSearchParams(cat === 'All' ? {} : { category: cat });
     setTimeout(() => setIsLoading(false), 500);
   };
 
