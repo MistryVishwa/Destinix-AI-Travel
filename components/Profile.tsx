@@ -25,6 +25,12 @@ interface ProfileProps {
 const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, onViewPackage, packages }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'settings' | 'trips' | 'alerts' | 'bookings' | 'expenses'>('bookings');
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as any);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const [formData, setFormData] = useState({
     name: user.name,
     phone: user.phone || '',
@@ -184,7 +190,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
               ].map(tab => (
                 <button 
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => handleTabChange(tab.id)}
                   className={`w-full flex items-center space-x-4 px-6 py-4 rounded-2xl font-bold transition-all ${
                     activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:bg-white/5'
                   }`}
