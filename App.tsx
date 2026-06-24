@@ -723,7 +723,7 @@ const App: React.FC = () => {
               />
               <button 
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 rounded-lg text-white hover:bg-indigo-500 transition-colors"
-                onClick={() => { if(email) { alert(`Subscribed ${email}!`); setEmail(''); }}}
+                onClick={() => { if(email) { setNotification('Subscribed! Welcome to Destinix.'); setEmail(''); }}}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
               </button>
