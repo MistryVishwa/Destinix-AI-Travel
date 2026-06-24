@@ -438,7 +438,13 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                   className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white focus:ring-2 focus:ring-indigo-500 outline-none h-[156px] transition-all text-lg resize-none"
                   value={vibe}
                   onChange={(e) => setVibe(e.target.value)}
+                  maxLength={300}
                 />
+                <div className={`text-right text-xs mt-1 ${
+                  vibe.length >= 300 ? 'text-red-400' : vibe.length > 250 ? 'text-amber-400' : 'text-gray-600'
+                }`}>
+                  {vibe.length} / 300
+                </div>
               </div>
             </div>
           </div>
