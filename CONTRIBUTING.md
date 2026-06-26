@@ -159,7 +159,7 @@ Open a PR:
 1. Go to the original [Destinix-AI-Travel repository](https://github.com/MistryVishwa/Destinix-AI-Travel).
 2. Click **Compare & pull request**.
 3. Fill out the **Pull Request Template** details (linked issue, description, screenshots if UI is changed, checklist).
-4. Link the PR to the issue by adding `Closes #IssueNumber` in the description.
+4. Link the PR to the issue by adding a reference like `Closes #IssueNumber`, `Fixes #IssueNumber`, `Resolves #IssueNumber`, `Related to #IssueNumber`, or `Ref #IssueNumber` in the description. **Note: Every PR must include a linked issue reference in its description or the CI workflow will fail and block the PR from being merged.**
 
 ---
 
