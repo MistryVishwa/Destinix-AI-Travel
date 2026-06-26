@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Sun, Moon } from 'lucide-react';
 import { Page, User } from '../types';
 
 interface NavbarProps {
@@ -10,6 +11,8 @@ interface NavbarProps {
   user: User | null;
   onSignInClick: () => void;
   onLogout: () => void;
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
 }
 
 const LanguageSwitcher: React.FC = () => {
@@ -32,7 +35,7 @@ const LanguageSwitcher: React.FC = () => {
   );
 };
 
-const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSignInClick, onLogout }) => {
+const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSignInClick, onLogout, theme, toggleTheme }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isAdmin = user && ['admin@destinix.com', 'admin@travel.com'].includes(user.email.toLowerCase());
@@ -175,6 +178,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSi
               </div>
 
               <LanguageSwitcher />
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="flex items-center justify-center p-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-gray-200 hover:bg-white/10 hover:text-white transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
 
               <button
                 onClick={() => handlePageChange(Page.Planner)}

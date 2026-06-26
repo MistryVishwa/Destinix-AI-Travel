@@ -100,6 +100,25 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Theme state
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('destinix_theme');
+    return saved === 'light' ? 'light' : 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('destinix_theme', theme);
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   // Load packages from server on mount
   useEffect(() => {
     const fetchAllPackages = async () => {
@@ -654,6 +673,8 @@ const App: React.FC = () => {
         user={user}
         onSignInClick={() => setShowAuth(true)}
         onLogout={handleLogout}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
 
       {notification && (

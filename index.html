@@ -6,12 +6,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Destinix - AI-Powered Travel Universe</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              gray: {
+                950: 'rgb(var(--bg-primary-rgb) / <alpha-value>)',
+                900: 'rgb(var(--bg-secondary-rgb) / <alpha-value>)',
+                800: 'rgb(var(--bg-tertiary-rgb) / <alpha-value>)',
+                700: 'rgb(var(--bg-quaternary-rgb) / <alpha-value>)',
+                500: 'rgb(var(--text-gray-500-rgb) / <alpha-value>)',
+                400: 'rgb(var(--text-light-rgb) / <alpha-value>)',
+                300: 'rgb(var(--text-muted-rgb) / <alpha-value>)',
+                200: 'rgb(var(--text-secondary-rgb) / <alpha-value>)',
+                100: 'rgb(var(--text-primary-rgb) / <alpha-value>)',
+              },
+              black: 'rgb(var(--bg-black-rgb) / <alpha-value>)',
+              white: 'rgb(var(--color-white-rgb) / <alpha-value>)',
+            }
+          }
+        }
+      }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --bg-primary-rgb: 3, 7, 18; /* #030712 */
+        --bg-secondary-rgb: 17, 24, 39; /* #111827 */
+        --bg-tertiary-rgb: 31, 41, 55; /* #1f2937 */
+        --bg-quaternary-rgb: 55, 65, 81; /* #374151 */
+        --bg-black-rgb: 0, 0, 0;
+        --color-white-rgb: 255, 255, 255;
+
+        --text-primary-rgb: 249, 250, 251; /* #f9fafb */
+        --text-secondary-rgb: 243, 244, 246; /* #f3f4f6 */
+        --text-muted-rgb: 209, 213, 219; /* #d1d5db */
+        --text-light-rgb: 156, 163, 175; /* #9ca3af */
+        --text-gray-500-rgb: 107, 114, 128; /* #6b7280 */
+      }
+
+      body.light-mode {
+        --bg-primary-rgb: 248, 250, 252; /* #f8fafc */
+        --bg-secondary-rgb: 255, 255, 255; /* #ffffff */
+        --bg-tertiary-rgb: 241, 245, 249; /* #f1f5f9 */
+        --bg-quaternary-rgb: 226, 232, 240; /* #e2e8f0 */
+        --bg-black-rgb: 255, 255, 255;
+        --color-white-rgb: 15, 23, 42; /* #0f172a */
+
+        --text-primary-rgb: 15, 23, 42; /* #0f172a */
+        --text-secondary-rgb: 30, 41, 59; /* #1e293b */
+        --text-muted-rgb: 71, 85, 105; /* #475569 */
+        --text-light-rgb: 100, 116, 139; /* #64748b */
+        --text-gray-500-rgb: 100, 116, 139;
+      }
+
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #030712;
-        color: #f9fafb;
+        background-color: rgb(var(--bg-primary-rgb));
+        color: rgb(var(--text-primary-rgb));
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
       .font-serif {
         font-family: 'Playfair Display', serif;
@@ -20,15 +74,57 @@
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #030712;
+        background: rgb(var(--bg-primary-rgb));
       }
       ::-webkit-scrollbar-thumb {
-        background: #374151;
+        background: rgb(var(--bg-quaternary-rgb));
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #4b5563;
+        background: rgb(var(--text-gray-500-rgb));
       }
+
+      /* Keep elements on solid indigo/purple/colored backgrounds readable in light mode */
+      body.light-mode .keep-white,
+      body.light-mode .keep-white *,
+      body.light-mode .bg-indigo-600,
+      body.light-mode .bg-indigo-600 *,
+      body.light-mode .bg-indigo-500,
+      body.light-mode .bg-indigo-500 *,
+      body.light-mode .bg-indigo-700,
+      body.light-mode .bg-indigo-700 *,
+      body.light-mode .bg-purple-600,
+      body.light-mode .bg-purple-600 *,
+      body.light-mode .bg-purple-500,
+      body.light-mode .bg-purple-500 *,
+      body.light-mode .bg-red-500,
+      body.light-mode .bg-red-500 *,
+      body.light-mode .bg-red-600,
+      body.light-mode .bg-red-600 *,
+      body.light-mode .bg-green-600,
+      body.light-mode .bg-green-600 *,
+      body.light-mode .bg-emerald-600,
+      body.light-mode .bg-emerald-600 *,
+      body.light-mode .bg-gradient-to-r,
+      body.light-mode .bg-gradient-to-r *,
+      body.light-mode .bg-gradient-to-br,
+      body.light-mode .bg-gradient-to-br * {
+        --color-white-rgb: 255, 255, 255 !important;
+      }
+
+      /* Restore original text color inside text gradients */
+      body.light-mode .bg-clip-text {
+        --color-white-rgb: 255, 255, 255 !important;
+      }
+
+      /* Adjust interactive inputs and select boxes in light mode */
+      body.light-mode input,
+      body.light-mode select,
+      body.light-mode textarea,
+      body.light-mode .\[color-scheme\:dark\] {
+        color-scheme: light !important;
+      }
+
 
       @keyframes fadeIn {
         from { opacity: 0; }
