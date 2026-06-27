@@ -798,7 +798,7 @@ app.post("/api/expenses", async (req, res) => {
   }
 });
 
-app.get("/api/expenses/:userId", async (req, res) => {
+app.get("/api/users/:userId/expenses", async (req, res) => {
   const { userId } = req.params;
 
   try {
