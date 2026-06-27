@@ -26,6 +26,7 @@ import PrivacyPolicy from "./components/PrivacyPolicy";
 import { getCurrentUser, logout as performLogout, updateProfile } from './services/authService';
 import AdminDashboard from './components/AdminDashboard';
 import { getPackages } from './services/packageService';
+import { chatWithAdvisor } from './services/geminiService';
 import CollaborativeTrips from './components/collaboration/CollaborativeTrips';
 import GroupDashboard from './components/collaboration/GroupDashboard';
 
@@ -299,6 +300,42 @@ const App: React.FC = () => {
     return packages.filter(pkg => pkg.type === activeCategory);
   }, [activeCategory, packages]);
 
+  // AI suggestions for zero-result searches
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  useEffect(() => {
+    // Clear suggestions whenever results exist or query is empty
+    if (!searchQuery || searchResults.length > 0) {
+      setAiSuggestions([]);
+      setLoadingSuggestions(false);
+      return;
+    }
+
+    setLoadingSuggestions(true);
+    setAiSuggestions([]);
+
+    const timer = setTimeout(() => {
+      chatWithAdvisor(
+        `The user searched for "${searchQuery}" on a travel platform but got no results. Suggest exactly 3 alternative similar destinations as a JSON array of strings only, no explanation.`,
+        []
+      ).then(response => {
+        try {
+          const parsed = JSON.parse(response);
+          setAiSuggestions(Array.isArray(parsed) ? parsed.slice(0, 3) : []);
+        } catch {
+          setAiSuggestions([]);
+        }
+      }).catch(() => {
+        setAiSuggestions([]);
+      }).finally(() => {
+        setLoadingSuggestions(false);
+      });
+    }, 600); // debounce: wait for the user to stop typing
+
+    return () => clearTimeout(timer);
+  }, [searchResults, searchQuery]);
+
   // Packages specifically for Trending Section (Sorted by booking count)
   const trendingPackages = useMemo(() => {
     return [...packages]
@@ -379,7 +416,33 @@ const App: React.FC = () => {
                   <svg className="w-10 h-10 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">No direct matches</h3>
-                <p className="text-gray-500 mb-8 max-w-md mx-auto">Our AI couldn't find a direct match for "{searchQuery}". Try exploring our most popular spots like Dubai or Paris.</p>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">Our AI couldn't find a direct match for "{searchQuery}". Try exploring our most popular spots like Dubai or Paris.</p>
+
+                {/* AI-powered destination suggestions */}
+                {loadingSuggestions && (
+                  <div className="flex items-center justify-center gap-2 mb-6 text-indigo-400 text-sm">
+                    <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    Finding AI suggestions…
+                  </div>
+                )}
+
+                {aiSuggestions.length > 0 && (
+                  <div className="mb-8">
+                    <p className="text-gray-500 text-sm mb-4">✨ AI suggests you might like:</p>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      {aiSuggestions.map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setSearchQuery(s)}
+                          className="px-5 py-2.5 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-400 text-sm font-medium hover:bg-indigo-500/20 hover:border-indigo-400/60 hover:text-indigo-300 transition-all duration-200"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <button onClick={() => setSearchQuery('')} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-500 transition-colors">Show All Experiences</button>
               </div>
             )}
