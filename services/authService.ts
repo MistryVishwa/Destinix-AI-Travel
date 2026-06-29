@@ -1,120 +1,72 @@
-
 import { User } from '../types';
 
-const USERS_KEY = 'destinix_users';
 const CURRENT_USER_KEY = 'destinix_current_user';
-
-// Mock password hashing (in real life, use a real backend)
-const hashPassword = async (password: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-};
-
-// Mock JWT generation
-const generateToken = (email: string) => {
-  return btoa(`header.${JSON.stringify({ email, exp: Date.now() + 3600000 })}.signature`);
-};
+const API_BASE = '/api';
 
 export const register = async (name: string, email: string, password: string): Promise<User> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 800));
+  const response = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password })
+  });
 
-  const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-  
-  if (users.find((u: any) => u.email === email)) {
-    throw new Error('Email already registered');
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Registration failed');
   }
 
-  const hashedPassword = await hashPassword(password);
-  const newUser = { 
-    id: Math.random().toString(36).substr(2, 9), 
-    name, 
-    email, 
-    password: hashedPassword,
-    phone: '',
-    address: '',
-    preferences: [],
-    avatar: '',
-    savedPackages: [],
-    priceAlerts: []
-  };
-  
-  users.push(newUser);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-  const userPublic: User = { 
-    id: newUser.id, 
-    name: newUser.name, 
-    email: newUser.email, 
-    phone: newUser.phone,
-    address: newUser.address,
-    preferences: newUser.preferences,
-    avatar: newUser.avatar,
-    savedPackages: newUser.savedPackages,
-    priceAlerts: newUser.priceAlerts,
-    token: generateToken(email) 
-  };
-  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userPublic));
-  
-  return userPublic;
+  const data = await response.json();
+  const user = { ...data.user, token: data.token };
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+  return user;
 };
 
 export const login = async (email: string, password: string): Promise<User> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
+  const response = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
 
-  const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-  const user = users.find((u: any) => u.email === email);
-  
-  if (!user) {
-    throw new Error('Invalid email or password');
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Invalid credentials');
   }
 
-  const hashedPassword = await hashPassword(password);
-  if (user.password !== hashedPassword) {
-    throw new Error('Invalid email or password');
-  }
+  const data = await response.json();
+  const user = { ...data.user, token: data.token };
+  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+  return user;
+};
 
-  const userPublic: User = { 
-    id: user.id, 
-    name: user.name, 
-    email: user.email,
-    phone: user.phone || '',
-    address: user.address || '',
-    preferences: user.preferences || [],
-    avatar: user.avatar || '',
-    savedPackages: user.savedPackages || [],
-    priceAlerts: user.priceAlerts || [],
-    token: generateToken(email) 
-  };
-  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userPublic));
-  
-  return userPublic;
+const getAuthHeaders = () => {
+  const user = getCurrentUser();
+  if (!user || !user.token) return {};
+  return { 'Authorization': `Bearer ${user.token}`, 'Content-Type': 'application/json' };
 };
 
 export const updateProfile = async (userId: string, updates: Partial<User>): Promise<User> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  
-  const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-  const userIndex = users.findIndex((u: any) => u.id === userId);
-  
-  if (userIndex === -1) {
-    throw new Error('User not found');
+  const response = await fetch(`${API_BASE}/user/profile`, {
+    method: 'PUT',
+    headers: getAuthHeaders() as any,
+    body: JSON.stringify(updates)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update profile');
   }
 
-  // Update in the "database"
-  const updatedUser = { ...users[userIndex], ...updates };
-  users[userIndex] = updatedUser;
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-  // Update current session
-  const currentUser = JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || '{}');
-  const newSession = { ...currentUser, ...updates };
-  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newSession));
-
-  return newSession;
+  const data = await response.json();
+  
+  // Update local session
+  const currentUser = getCurrentUser();
+  if (currentUser) {
+    const newSession = { ...currentUser, ...data };
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(newSession));
+    return newSession;
+  }
+  
+  return data;
 };
 
 export const logout = () => {
@@ -127,9 +79,13 @@ export const getCurrentUser = (): User | null => {
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-  if (!users.find((u: any) => u.email === email)) {
-    throw new Error('Email not found');
+  const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send reset link');
   }
 };

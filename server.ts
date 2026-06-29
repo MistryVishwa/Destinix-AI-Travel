@@ -16,6 +16,8 @@ import { createServer } from "http";
 import { Server as SocketServer } from "socket.io";
 import collaborationRoutes from "./server/collaboration/routes/groupRoutes";
 import destinationGuideRouter from "./server/routes/destinationGuide";
+import authRoutes from "./server/routes/authRoutes";
+import userRoutes from "./server/routes/userRoutes";
 import { initSocket } from "./server/collaboration/socket/socketHandler";
 
 dotenv.config();
@@ -84,6 +86,8 @@ app.use((req: any, res, next) => {
 });
 
 app.use("/api", collaborationRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
 app.use(destinationGuideRouter);
 
 

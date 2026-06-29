@@ -30,6 +30,8 @@ model User {
   zipCode               String?
   avatar                String?
   avatarUrl             String?
+  password              String?
+  preferences           String[]                @default([])
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   
@@ -41,6 +43,8 @@ model User {
   expenses              Expense[]
   bookings              Booking[]
   reviews               Review[]
+  savedPackages         TravelPackage[]         @relation("SavedPackages")
+  priceAlerts           PriceAlert[]
 }
 
 model TravelPackage {
@@ -62,6 +66,8 @@ model TravelPackage {
   
   bookings     Booking[]
   reviews      Review[]
+  savedByUsers User[]   @relation("SavedPackages")
+  priceAlerts  PriceAlert[]
 }
 
 model TripGroup {
@@ -251,4 +257,17 @@ model Review {
 
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   package   TravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+model PriceAlert {
+  id              String        @id @default(cuid())
+  userId          String
+  packageId       String
+  targetPrice     Float
+  createdAt       DateTime      @default(now())
+  
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package         TravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, packageId])
 }
