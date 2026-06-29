@@ -14,6 +14,10 @@ interface PackageCardProps {
   onViewDetails?: (pkg: TravelPackage) => void;
 }
 
+/** Module-level cache: persists for the lifetime of the page session,
+ *  preventing duplicate Unsplash requests for cards with the same title. */
+const imageCache = new Map<string, string>();
+
 const PackageCard: React.FC<PackageCardProps> = ({ pkg, isAlertSet, isSaved, onToggleAlert, onToggleSave, onViewDetails }) => {
   const { t } = useTranslation();
   const [imgSrc, setImgSrc] = React.useState<string>(
@@ -23,73 +27,90 @@ const PackageCard: React.FC<PackageCardProps> = ({ pkg, isAlertSet, isSaved, onT
   );
 
   React.useEffect(() => {
-  const buildQuery = () => {
-    const title = pkg.title.toLowerCase();
+    const buildQuery = () => {
+      const title = pkg.title.toLowerCase();
 
-    if (title.includes("rajasthan desert")) {
-      return "Rajasthan Thar Desert sand dunes camel";
-    }
-
-    if (title.includes("jaipur") && title.includes("jodhpur")) {
-      return "Jaipur Amber Fort Jodhpur Mehrangarh Fort Udaipur City Palace";
-    }
-
-    if (title.includes("rajasthan family")) {
-      return "Rajasthan forts palaces culture";
-    }
-
-    if (title.includes("goa honeymoon")) {
-      return "Goa romantic beach sunset couple";
-    }
-
-    if (title.includes("goa family")) {
-      return "Goa beach family vacation";
-    }
-
-    if (title.includes("goa beach")) {
-      return "Goa beach coastline aerial";
-    }
-
-    if (title.includes("munnar")) {
-      return "Munnar tea gardens hills Kerala";
-    }
-
-    if (title.includes("kashmir")) {
-      return "Kashmir Dal Lake snow mountains";
-    }
-
-    if (title.includes("rome")) {
-      return "Rome Colosseum Vatican";
-    }
-
-    return pkg.destination;
-  };
-
-  const fetchImage = async () => {
-    try {
-      const query = buildQuery();
-
-      const res = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
-        {
-          headers: {
-            Authorization: `Client-ID ${import.meta.env.VITE_UNSPLASH_ACCESS_KEY}`
-          }
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.results && data.results.length > 0) {
-        setImgSrc(data.results[0].urls.regular);
+      if (title.includes("rajasthan desert")) {
+        return "Rajasthan Thar Desert sand dunes camel";
       }
-    } catch (error) {
-      console.error("Image fetch failed:", error);
-    }
-  };
 
-  fetchImage();
-}, [pkg.title]);
+      if (title.includes("jaipur") && title.includes("jodhpur")) {
+        return "Jaipur Amber Fort Jodhpur Mehrangarh Fort Udaipur City Palace";
+      }
+
+      if (title.includes("rajasthan family")) {
+        return "Rajasthan forts palaces culture";
+      }
+
+      if (title.includes("goa honeymoon")) {
+        return "Goa romantic beach sunset couple";
+      }
+
+      if (title.includes("goa family")) {
+        return "Goa beach family vacation";
+      }
+
+      if (title.includes("goa beach")) {
+        return "Goa beach coastline aerial";
+      }
+
+      if (title.includes("munnar")) {
+        return "Munnar tea gardens hills Kerala";
+      }
+
+      if (title.includes("kashmir")) {
+        return "Kashmir Dal Lake snow mountains";
+      }
+
+      if (title.includes("rome")) {
+        return "Rome Colosseum Vatican";
+      }
+
+      return pkg.destination;
+    };
+
+    // Return immediately on cache hit — no network request needed.
+    if (imageCache.has(pkg.title)) {
+      setImgSrc(imageCache.get(pkg.title)!);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetchImage = async () => {
+      try {
+        const query = buildQuery();
+
+        const res = await fetch(
+          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
+          {
+            signal: controller.signal,
+            headers: {
+              Authorization: `Client-ID ${import.meta.env.VITE_UNSPLASH_ACCESS_KEY}`
+            }
+          }
+        );
+
+        const data = await res.json();
+
+        if (data.results && data.results.length > 0) {
+          const url = data.results[0].urls.regular;
+          // Populate cache so subsequent cards with the same title skip the fetch.
+          imageCache.set(pkg.title, url);
+          setImgSrc(url);
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error("Image fetch failed:", error);
+        }
+      }
+    };
+
+    fetchImage();
+
+    // Cancel the in-flight request if the component unmounts before it resolves.
+    return () => controller.abort();
+  }, [pkg.title]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const fallback = `https://picsum.photos/seed/${pkg.destination}-fallback/800/600`;
