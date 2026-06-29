@@ -144,7 +144,7 @@ export const chatWithAdvisor = async (message: string, history: { role: 'user' |
   const languageInstruction = language === 'hi' ? ' Respond entirely in Hindi (Devanagari script).' : '';
 
   const chat = ai.chats.create({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-2.0-flash',
     history: geminiHistory,
     config: {
       systemInstruction: `You are Destinix AI, a world-class travel advisor. You are helpful, professional, and have deep knowledge of global destinations, cultures, and travel logistics. Keep your responses concise but insightful.${languageInstruction}`
