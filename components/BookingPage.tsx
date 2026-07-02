@@ -12,8 +12,31 @@ import {
   Car, Plane, Bike, Hotel, Sparkles, 
   CheckCircle2, CreditCard, ShieldCheck, 
   ChevronLeft, Info, Wallet, MapPin, Calendar as CalendarIcon,
-  ArrowRight, User as UserIcon, Mail, Phone, Home, Loader2, Bell
+  ArrowRight, User as UserIcon, Mail, Phone, Home, Loader2, Bell, Copy
 } from 'lucide-react';
+
+/** Copies a value to the clipboard and shows a brief checkmark for 2 seconds. */
+const CopyButton: React.FC<{ value: string }> = ({ value }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      aria-label="Copy to clipboard"
+      title={copied ? 'Copied!' : 'Copy to clipboard'}
+      className="ml-2 text-gray-500 hover:text-indigo-400 transition-colors focus:outline-none"
+    >
+      {copied
+        ? <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        : <Copy className="w-4 h-4" />
+      }
+    </button>
+  );
+};
 
 declare global {
   interface Window {
@@ -1209,9 +1232,21 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.amount')}</span>
                         <span className="text-sm text-emerald-400 font-bold">{formatCurrency(pricing.total, pkg.currency)}</span>
                       </div>
+                      {bookingId && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.bookingId', 'Booking ID')}</span>
+                          <span className="flex items-center text-sm text-indigo-400 font-mono">
+                            #{bookingId}
+                            <CopyButton value={bookingId} />
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500 uppercase font-bold tracking-wider">{t('bookingPage.paymentId')}</span>
-                        <span className="text-sm text-indigo-400 font-mono">{paymentData?.paymentId}</span>
+                        <span className="flex items-center text-sm text-indigo-400 font-mono">
+                          {paymentData?.paymentId}
+                          {paymentData?.paymentId && <CopyButton value={paymentData.paymentId} />}
+                        </span>
                       </div>
                     </div>
 
