@@ -59,6 +59,11 @@ export interface PriceAlert {
   createdAt: Date;
 }
 
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
 export interface ItineraryDay {
   day: number;
   title: string;
@@ -67,6 +72,10 @@ export interface ItineraryDay {
   transportation?: 'Walking' | 'Public Transport' | 'Taxi' | 'Rental Car';
   notes?: string;
   shops?: string[];
+  // Optional geographic anchor for the day, used by the itinerary map view.
+  // May be supplied by the AI or resolved later via geocoding; absent when unresolved.
+  locationName?: string;
+  coordinates?: Coordinates;
 }
 
 export interface TravelInsurance {
