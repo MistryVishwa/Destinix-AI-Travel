@@ -45,6 +45,7 @@ model User {
   reviews               Review[]
   savedPackages         TravelPackage[]         @relation("SavedPackages")
   priceAlerts           PriceAlert[]
+  journals              TripJournal[]
 }
 
 model TravelPackage {
@@ -270,4 +271,18 @@ model PriceAlert {
   package         TravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
   
   @@unique([userId, packageId])
+}
+
+model TripJournal {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String   @db.Text
+  coverImage String?
+  isPublic  Boolean  @default(true)
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
