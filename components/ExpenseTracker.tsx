@@ -34,7 +34,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ userId }) => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/expenses/${userId}`);
+        const res = await fetch(`/api/users/${userId}/expenses`);
         if (!res.ok) throw new Error('Failed to load expenses');
         const json = await res.json();
         if (!cancelled) setExpenses(json.data || []);

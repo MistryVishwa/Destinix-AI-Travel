@@ -3,10 +3,12 @@ import { createServer as createViteServer } from "vite";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import jwt from "jsonwebtoken";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
@@ -33,6 +35,9 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "admin@destinix.com,admin@trav
   .split(",")
   .map(email => email.trim().toLowerCase());
 
+// Shared secret used to sign/verify auth tokens (matches authRoutes/userRoutes)
+const JWT_SECRET = process.env.JWT_SECRET || 'destinix_fallback_secret_key_change_in_prod';
+
 // Middleware to verify if the request is from an authorized Admin
 const isAdmin = (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
@@ -42,16 +47,8 @@ const isAdmin = (req: any, res: any, next: any) => {
 
   const token = authHeader.split(" ")[1];
   try {
-    const decodedStr = Buffer.from(token, 'base64').toString('utf-8');
-    const parts = decodedStr.split(".");
-    if (parts.length !== 3) {
-      return res.status(401).json({ error: "Unauthorized. Invalid token format." });
-    }
-
-    const payload = JSON.parse(parts[1]);
-    if (Date.now() > payload.exp) {
-      return res.status(401).json({ error: "Unauthorized. Token expired." });
-    }
+    // jwt.verify checks the signature and expiry, throwing on tampered/expired tokens.
+    const payload = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
 
     if (!ADMIN_EMAILS.includes(payload.email.toLowerCase())) {
       return res.status(403).json({ error: "Forbidden. Admin access required." });
@@ -67,17 +64,24 @@ const isAdmin = (req: any, res: any, next: any) => {
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
+// Allowlisted origins for CORS (Express + Socket.io). Set FRONTEND_URL to a
+// comma-separated list of origins in production; defaults to local dev.
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
+  .split(",")
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
 const httpServer = createServer(app);
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: "*",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
 
 initSocket(io);
 
-app.use(cors());
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -86,8 +90,17 @@ app.use((req: any, res, next) => {
   next();
 });
 
+// Throttle auth endpoints to mitigate brute-force / credential-stuffing attacks.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 auth requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again after 15 minutes." },
+});
+
 app.use("/api", collaborationRoutes);
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/journals", journalRoutes);
 app.use(destinationGuideRouter);
@@ -804,7 +817,7 @@ app.post("/api/expenses", async (req, res) => {
   }
 });
 
-app.get("/api/expenses/:userId", async (req, res) => {
+app.get("/api/users/:userId/expenses", async (req, res) => {
   const { userId } = req.params;
 
   try {

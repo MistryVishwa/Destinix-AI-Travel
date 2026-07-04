@@ -1,17 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-
-export type Destination = {
-  id: string;
-  name: string;
-  description: string;
-  attractions: string[];
-  foodGuide: string[];
-  transportation: string;
-  safetyInfo: string;
-  photographySpots: string[];
-  travelTips: string[];
-};
+import { Destination } from '../types';
 
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'destinations.json');

@@ -53,7 +53,8 @@ export const generateTripPlan = async (destination: string, days: number, budget
   const languageInstruction = language === 'hi' ? 'Respond entirely in Hindi (Devanagari script). ' : '';
   const prompt = `${languageInstruction}Generate a comprehensive trip plan for ${destination} for ${days} days.
   Budget level: ${budget}. Vibe: ${vibe}.
-  Provide a destination overview, estimated budget in ${budget} currency if applicable (otherwise USD), best time to visit, hotel suggestions, highlights (adventure, food, culture, nature, relaxation), a budget breakdown (stay, transport, activities, food as percentages/numbers), travel tips, packing suggestions, safety advice, current typical weather, and a detailed day-by-day itinerary.`;
+  Provide a destination overview, estimated budget in ${budget} currency if applicable (otherwise USD), best time to visit, hotel suggestions, highlights (adventure, food, culture, nature, relaxation), a budget breakdown (stay, transport, activities, food as percentages/numbers), travel tips, packing suggestions, safety advice, current typical weather, and a detailed day-by-day itinerary.
+  For each itinerary day, also provide "locationName" (the main area or landmark that day centres on) and its approximate "coordinates" as { lat, lng } decimal degrees, so the day can be shown on a map.`;
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
@@ -114,7 +115,15 @@ export const generateTripPlan = async (destination: string, days: number, budget
                 recommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
                 transportation: { type: Type.STRING },
                 notes: { type: Type.STRING },
-                shops: { type: Type.ARRAY, items: { type: Type.STRING } }
+                shops: { type: Type.ARRAY, items: { type: Type.STRING } },
+                locationName: { type: Type.STRING },
+                coordinates: {
+                  type: Type.OBJECT,
+                  properties: {
+                    lat: { type: Type.NUMBER },
+                    lng: { type: Type.NUMBER }
+                  }
+                }
               },
               required: ["day", "title", "activities", "recommendations"]
             }
@@ -144,7 +153,7 @@ export const chatWithAdvisor = async (message: string, history: { role: 'user' |
   const languageInstruction = language === 'hi' ? ' Respond entirely in Hindi (Devanagari script).' : '';
 
   const chat = ai.chats.create({
-    model: 'gemini-3-pro-preview',
+    model: 'gemini-2.0-flash',
     history: geminiHistory,
     config: {
       systemInstruction: `You are Destinix AI, a world-class travel advisor. You are helpful, professional, and have deep knowledge of global destinations, cultures, and travel logistics. Keep your responses concise but insightful.${languageInstruction}`

@@ -69,7 +69,7 @@ const AdvisorChat: React.FC = () => {
         )}
 
         <button
-          onClick={() => navigate(`/destinations/${slug}`)}
+          onClick={() => navigate(`/destination-guide/${slug}`)}
           className="block text-indigo-300 hover:underline"
         >
           • {t('advisor.destinationGuide')}

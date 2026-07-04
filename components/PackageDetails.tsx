@@ -515,7 +515,7 @@ const handleSubmitReview = async (e: React.FormEvent) => {
                   </div>
                 </div>
 
-                <div className="mt-10 pt-10 border-t border-white/10">
+                <div className="mt-10 pt-10 border-t border-white/10 space-y-3">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -532,6 +532,16 @@ const handleSubmitReview = async (e: React.FormEvent) => {
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 py-5 rounded-2xl text-white font-bold text-lg"
                   >
                     {t('packageDetails.secureYourTrip')}
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate(`/destination-guide/${pkg.destination.toLowerCase().replace(/[^a-z0-9]/g, '')}`)}
+                    className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 py-4 rounded-2xl text-indigo-300 hover:text-indigo-200 font-semibold text-sm transition-all"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    {t('packageDetails.destinationGuide', 'Destination Guide')}
                   </motion.button>
                 </div>
               </div>

@@ -5,6 +5,7 @@
 [![Express.js](https://img.shields.io/badge/Express-5.2-lightgrey.svg?style=flat-square&logo=express)](https://expressjs.com/)
 [![Gemini AI](https://img.shields.io/badge/Gemini_AI-1.42-purple.svg?style=flat-square&logo=googlegemini)](https://ai.google.dev/)
 [![Firebase](https://img.shields.io/badge/Firebase-Auth-yellow.svg?style=flat-square&logo=firebase)](https://firebase.google.com/)
+[![CI](https://github.com/Mohammad-Hassan027/Destinix-AI-Travel/actions/workflows/ci.yml/badge.svg)](https://github.com/Mohammad-Hassan027/Destinix-AI-Travel/actions/workflows/ci.yml)
 
 **Destinix AI Travel** is a state-of-the-art, premium AI-powered travel planning and package booking platform. Designed with sleek dark aesthetics, micro-animations, and interactive layouts, it offers users seamless itinerary generation, curated travel package exploring, email-verified booking engines, and personal travel assistant chats.
 

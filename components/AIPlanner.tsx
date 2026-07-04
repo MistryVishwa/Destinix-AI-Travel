@@ -15,7 +15,9 @@ import {
   ShoppingBag, Hotel
 } from 'lucide-react';
 import { generateTripPlan } from '../services/geminiService';
-import { TripPlan, TravelPackage, TravelInsurance, User, Page } from '../types';
+import { resolveItineraryCoordinates } from '../services/geocodingService';
+import ItineraryMap from './ItineraryMap';
+import { TripPlan, TravelPackage, TravelInsurance, User, Page, ItineraryDay, Coordinates } from '../types';
 import { MOCK_PACKAGES, INSURANCE_OPTIONS } from '../constants.tsx';
 
 interface AIPlannerProps {
@@ -54,6 +56,8 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
   const [expandedDay, setExpandedDay] = useState<number | null>(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
+  const [mapDays, setMapDays] = useState<ItineraryDay[]>([]);
+  const [mapCenter, setMapCenter] = useState<Coordinates | null>(null);
   
   const resultsRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
@@ -65,6 +69,28 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  // Resolve coordinates for the itinerary map whenever a new plan is generated.
+  // AI-supplied coordinates render immediately; missing ones are geocoded in the
+  // background so the map fills in without blocking the itinerary.
+  useEffect(() => {
+    if (!plan) {
+      setMapDays([]);
+      setMapCenter(null);
+      return;
+    }
+    let cancelled = false;
+    setMapDays(plan.itinerary);
+    resolveItineraryCoordinates(plan.destination, plan.itinerary)
+      .then((resolved) => {
+        if (!cancelled) {
+          setMapDays(resolved.days);
+          setMapCenter(resolved.center);
+        }
+      })
+      .catch(() => {/* map degrades gracefully if resolution fails */});
+    return () => { cancelled = true; };
+  }, [plan]);
 
   const handlePlan = async (
     customDest = destination,
@@ -582,6 +608,20 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                     </div>
                     <MapIcon className="w-10 h-10 text-purple-400" />
                   </div>
+                </div>
+
+                {/* Interactive Itinerary Map */}
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+                    <MapIcon className="w-5 h-5 mr-2 text-purple-400" />
+                    {t('aiPlanner.mapView')}
+                  </h3>
+                  <ItineraryMap
+                    days={mapDays}
+                    center={mapCenter}
+                    selectedDay={expandedDay}
+                    onSelectDay={(day) => setExpandedDay(day)}
+                  />
                 </div>
 
                 {/* Budget Breakdown */}
