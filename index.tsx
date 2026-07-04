@@ -4,6 +4,12 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './i18n/i18n';
+import { registerSW } from 'virtual:pwa-register';
+
+// Register service worker for PWA offline capabilities
+if ('serviceWorker' in navigator) {
+  registerSW({ immediate: true });
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
