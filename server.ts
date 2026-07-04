@@ -19,6 +19,7 @@ import destinationGuideRouter from "./server/routes/destinationGuide";
 import authRoutes from "./server/routes/authRoutes";
 import userRoutes from "./server/routes/userRoutes";
 import { initSocket } from "./server/collaboration/socket/socketHandler";
+import journalRoutes from "./server/routes/journalRoutes";
 
 dotenv.config();
 
@@ -88,6 +89,7 @@ app.use((req: any, res, next) => {
 app.use("/api", collaborationRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/journals", journalRoutes);
 app.use(destinationGuideRouter);
 
 
