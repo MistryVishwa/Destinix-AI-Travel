@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
@@ -81,8 +82,17 @@ app.use((req: any, res, next) => {
   next();
 });
 
+// Throttle auth endpoints to mitigate brute-force / credential-stuffing attacks.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 auth requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many attempts. Please try again after 15 minutes." },
+});
+
 app.use("/api", collaborationRoutes);
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/user", userRoutes);
 app.use(destinationGuideRouter);
 
