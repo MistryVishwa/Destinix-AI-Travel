@@ -9,7 +9,7 @@ import { SharedItinerary } from "./SharedItinerary";
 import { DestinationSuggestions } from "./DestinationSuggestions";
 import { DiscussionBoard } from "./DiscussionBoard";
 import { SharedBookings } from "./SharedBookings";
-import { ExpenseTracker } from "./ExpenseTracker";
+import { GroupExpenseTracker } from "./GroupExpenseTracker";
 import { InviteMemberModal } from "./InviteMemberModal";
 
 import { motion, AnimatePresence } from "motion/react";
@@ -328,7 +328,7 @@ export const GroupDashboard: React.FC<GroupDashboardProps> = ({ user, tab = "das
         )}
 
         {activeTab === "expenses" && (
-          <ExpenseTracker groupId={groupId!} />
+          <GroupExpenseTracker groupId={groupId!} />
         )}
 
       </div>

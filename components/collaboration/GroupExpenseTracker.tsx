@@ -4,11 +4,11 @@ import { formatCurrency } from "../../utils/currency";
 import { Plus, CreditCard, DollarSign, Users, RefreshCw, AlertCircle, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 
-interface ExpenseTrackerProps {
+interface GroupExpenseTrackerProps {
   groupId: string;
 }
 
-export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ groupId }) => {
+export const GroupExpenseTracker: React.FC<GroupExpenseTrackerProps> = ({ groupId }) => {
   const { expenses, summary, loading, addExpense } = useExpenses(groupId);
   const [showAddForm, setShowAddForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -281,4 +281,4 @@ export const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ groupId }) => {
     </div>
   );
 };
-export default ExpenseTracker;
+export default GroupExpenseTracker;
