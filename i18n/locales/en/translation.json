@@ -76,6 +76,7 @@
     "successMessage": "Message sent successfully!",
     "errorNameRequired": "Full name is required",
     "errorEmailRequired": "Email is required",
+    "errorEmailInvalid": "Please enter a valid email address",
     "errorPhoneInvalid": "Enter valid 10 digit number or +91XXXXXXXXXX",
     "errorMessageRequired": "Message is required",
     "directContact": "Direct Contact",

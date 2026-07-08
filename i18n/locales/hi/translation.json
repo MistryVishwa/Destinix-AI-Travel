@@ -76,6 +76,7 @@
     "successMessage": "संदेश सफलतापूर्वक भेजा गया!",
     "errorNameRequired": "पूरा नाम आवश्यक है",
     "errorEmailRequired": "ईमेल आवश्यक है",
+    "errorEmailInvalid": "कृपया एक वैध ईमेल पता दर्ज करें",
     "errorPhoneInvalid": "मान्य 10 अंकों का नंबर या +91XXXXXXXXXX दर्ज करें",
     "errorMessageRequired": "संदेश आवश्यक है",
     "directContact": "सीधा संपर्क",

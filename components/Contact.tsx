@@ -36,7 +36,11 @@ const Contact: React.FC = () => {
     const newErrors: any = {};
 
     if (!formData.name.trim()) newErrors.name = t('contact.errorNameRequired');
-    if (!formData.email.trim()) newErrors.email = t('contact.errorEmailRequired');
+    if (!formData.email.trim()) {
+      newErrors.email = t('contact.errorEmailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = t('contact.errorEmailInvalid');
+    }
     if (!validatePhone(formData.phone))
       newErrors.phone = t('contact.errorPhoneInvalid');
     if (!formData.message.trim()) newErrors.message = t('contact.errorMessageRequired');
