@@ -39,7 +39,7 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ onNavigate }) => {
           </p>
         </div>
         <button
-          onClick={() => navigate('/profile')} // Assumes they create it from their profile
+          onClick={() => navigate('/journals/new')}
           className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-500 transition-colors shadow-[0_0_15px_rgba(79,70,229,0.3)] shrink-0"
         >
           Share Your Journey
@@ -107,7 +107,7 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ onNavigate }) => {
           <h3 className="text-2xl font-serif font-bold text-white mb-2">No journals yet!</h3>
           <p className="text-gray-500 max-w-md mb-8">Be the first to share your amazing travel experiences with the Destinix community.</p>
           <button 
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate('/journals/new')}
             className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-500 transition-colors"
           >
             Start Writing
