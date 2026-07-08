@@ -45,7 +45,12 @@ export const generateItinerary = async (prompt: string): Promise<ItineraryRespon
     }
   });
 
-  return JSON.parse(response.text || '{}');
+  try {
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    console.error('Gemini JSON parse error:', error);
+    throw new Error('Failed to parse Gemini response');
+  }
 };
 
 export const generateTripPlan = async (destination: string, days: number, budget: string, vibe: string, language: string = 'en'): Promise<TripPlan> => {
@@ -138,7 +143,12 @@ export const generateTripPlan = async (destination: string, days: number, budget
     }
   });
 
-  return JSON.parse(response.text || '{}');
+  try {
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    console.error('Gemini JSON parse error:', error);
+    throw new Error('Failed to parse Gemini response');
+  }
 };
 
 export const chatWithAdvisor = async (message: string, history: { role: 'user' | 'assistant', content: string }[], language: string = 'en'): Promise<string> => {
@@ -193,5 +203,10 @@ export const analyzeTravelPersonality = async (userInputs: any) => {
       }
     }
   });
-  return JSON.parse(response.text || '{}');
+  try {
+    return JSON.parse(response.text || '{}');
+  } catch (error) {
+    console.error('Gemini JSON parse error:', error);
+    throw new Error('Failed to parse Gemini response');
+  }
 };
