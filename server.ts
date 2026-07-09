@@ -114,6 +114,7 @@ const razorpay = new Razorpay({
 
 // In-memory OTP storage (for production, use Redis or a database)
 const otpStore: Record<string, { otp: string; expires: number }> = {};
+const otpLocks: Record<string, Promise<void>> = {};
 
 // Nodemailer transporter for Gmail
 const transporter = nodemailer.createTransport({
@@ -412,18 +413,35 @@ app.post("/api/update-booking", async (req, res) => {
   }
 });
 
+// Mutex helper to prevent race conditions
+async function withOtpLock<T>(email: string, fn: () => Promise<T>): Promise<T> {
+  while (otpLocks[email]) {
+    await otpLocks[email];
+  }
+  let release: () => void;
+  otpLocks[email] = new Promise(resolve => { release = resolve; });
+  try {
+    return await fn();
+  } finally {
+    delete otpLocks[email];
+    release!();
+  }
+}
+
 app.post("/api/send-otp", async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
 
   const normalizedEmail = email.toLowerCase();
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore[normalizedEmail] = {
-    otp,
-    expires: Date.now() + 10 * 60 * 1000, // 10 minutes
-  };
-
+  
   try {
+    await withOtpLock(normalizedEmail, async () => {
+      otpStore[normalizedEmail] = {
+        otp,
+        expires: Date.now() + 10 * 60 * 1000, // 10 minutes
+      };
+    });
     const isConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
     
     if (isConfigured) {
@@ -471,31 +489,40 @@ app.post("/api/send-otp", async (req, res) => {
   }
 });
 
-app.post("/api/verify-otp", (req, res) => {
+app.post("/api/verify-otp", async (req, res) => {
   const { email, otp } = req.body;
   if (!email || !otp) return res.status(400).json({ error: "Email and OTP are required" });
 
   const normalizedEmail = email.toLowerCase();
-  const stored = otpStore[normalizedEmail];
 
-  console.log(`OTP verification for: ${normalizedEmail}`);
+  try {
+    await withOtpLock(normalizedEmail, async () => {
+      const stored = otpStore[normalizedEmail];
+      console.log(`OTP verification for: ${normalizedEmail}`);
 
-  if (!stored) {
-    return res.status(400).json({ error: "No OTP found for this email. Please request a new one." });
-  }
+      if (!stored) {
+        res.status(400).json({ error: "No OTP found for this email. Please request a new one." });
+        return;
+      }
 
-  if (Date.now() > stored.expires) {
-    delete otpStore[normalizedEmail];
-    return res.status(400).json({ error: "OTP has expired. Please request a new one." });
-  }
+      if (Date.now() > stored.expires) {
+        delete otpStore[normalizedEmail];
+        res.status(400).json({ error: "OTP has expired. Please request a new one." });
+        return;
+      }
 
-  if (stored.otp === otp) {
-    delete otpStore[normalizedEmail];
-    console.log(`OTP verified successfully for ${normalizedEmail}`);
-    res.json({ success: true, message: "OTP verified successfully" });
-  } else {
-    console.log(`Invalid OTP entered for ${normalizedEmail}`);
-    res.status(400).json({ error: "Invalid verification code. Please check and try again." });
+      if (stored.otp === otp) {
+        delete otpStore[normalizedEmail];
+        console.log(`OTP verified successfully for ${normalizedEmail}`);
+        res.json({ success: true, message: "OTP verified successfully" });
+      } else {
+        console.log(`Invalid OTP entered for ${normalizedEmail}`);
+        res.status(400).json({ error: "Invalid verification code. Please check and try again." });
+      }
+    });
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    res.status(500).json({ error: "Verification failed" });
   }
 });
 
