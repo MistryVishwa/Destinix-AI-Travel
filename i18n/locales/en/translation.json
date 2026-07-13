@@ -471,5 +471,10 @@
     "totalAmount": "Total Amount",
     "backToOptions": "Back to Options",
     "confirmAndPay": "Confirm & Pay"
+  },
+  "community": {
+    "errorTitle": "Connection Error",
+    "errorLoadJournals": "Failed to load journals. Please check your connection and try again.",
+    "retry": "Retry"
   }
 }

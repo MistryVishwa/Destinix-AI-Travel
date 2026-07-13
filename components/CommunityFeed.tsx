@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import { TripJournal } from '../types';
 import { getPublicJournals } from '../services/journalService';
 import { Page } from '../types';
@@ -10,21 +12,27 @@ interface CommunityFeedProps {
 }
 
 const CommunityFeed: React.FC<CommunityFeedProps> = ({ onNavigate }) => {
+  const { t } = useTranslation();
   const [journals, setJournals] = useState<TripJournal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const fetchJournals = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getPublicJournals();
+      setJournals(data);
+    } catch (err) {
+      console.error("Failed to fetch journals", err);
+      setError("Failed to load journals. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchJournals = async () => {
-      try {
-        const data = await getPublicJournals();
-        setJournals(data);
-      } catch (err) {
-        console.error("Failed to fetch journals", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchJournals();
   }, []);
 
@@ -51,6 +59,23 @@ const CommunityFeed: React.FC<CommunityFeedProps> = ({ onNavigate }) => {
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-white/5 border border-white/10 rounded-3xl h-80 animate-pulse"></div>
           ))}
+        </div>
+      ) : error ? (
+        <div className="py-24 flex flex-col items-center justify-center bg-white/5 border border-red-500/20 rounded-[40px] text-center max-w-xl mx-auto px-6 backdrop-blur-md">
+          <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 border border-red-500/20 text-red-400">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">{t('community.errorTitle', 'Connection Error')}</h3>
+          <p className="text-gray-400 mb-8">{t('community.errorLoadJournals')}</p>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={fetchJournals}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(79,70,229,0.3)]"
+          >
+            <RefreshCw className="w-4 h-4" />
+            {t('community.retry')}
+          </motion.button>
         </div>
       ) : journals.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
