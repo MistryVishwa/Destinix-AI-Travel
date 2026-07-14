@@ -86,6 +86,7 @@ Create a `.env` file at the root of the project (you can use `.env.example` as a
 | `DATABASE_URL` | PostgreSQL connection string (Transaction pooler) | `postgresql://postgres...:6543/postgres` |
 | `DIRECT_URL` | PostgreSQL direct connection string (Session pooler) | `postgresql://postgres...:5432/postgres` |
 | `GEMINI_API_KEY` | Google AI Studio Key | [Get API Key](https://aistudio.google.com/) |
+| `VITE_GOOGLE_MAPS_API_KEY` | (Optional) Google Maps JavaScript API key for the AI Planner's itinerary map. Without it, the map falls back to the free OpenStreetMap view. | [Google Cloud Console](https://console.cloud.google.com/google/maps-apis) — enable "Maps JavaScript API" |
 | `VITE_FIREBASE_API_KEY` | Firebase API Client Key | Firebase console -> Project Settings |
 | `VITE_FIREBASE_AUTH_DOMAIN` | Firebase Domain | `<project-name>.firebaseapp.com` |
 | `VITE_FIREBASE_PROJECT_ID` | Firebase ID | Project identifier |
