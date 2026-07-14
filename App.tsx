@@ -94,7 +94,8 @@ const App: React.FC = () => {
 
   const [packages, setPackages] = useState<TravelPackage[]>(MOCK_PACKAGES);
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeCategory = searchParams.get('category') || 'All';
+  const rawCategory = searchParams.get('category') || 'All';
+  const activeCategory = CATEGORIES.includes(rawCategory) ? rawCategory : 'All';
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFilters, setSearchFilters] = useState<any>({});
   const [user, setUser] = useState<User | null>(() => getCurrentUser());
@@ -299,6 +300,14 @@ const App: React.FC = () => {
     setSearchParams(cat === 'All' ? {} : { category: cat });
     setTimeout(() => setIsLoading(false), 500);
   };
+
+  // Strip invalid ?category= params from the URL so they don't linger
+  useEffect(() => {
+    const raw = searchParams.get('category');
+    if (raw && !CATEGORIES.includes(raw)) {
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   const categoryFilteredPackages = useMemo(() => {
     if (activeCategory === 'All') return packages;
