@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { generateTripPlan } from '../services/geminiService';
 import { resolveItineraryCoordinates } from '../services/geocodingService';
-import ItineraryMap from './ItineraryMap';
+import MapView from './MapView';
 import { TripPlan, TravelPackage, TravelInsurance, User, Page, ItineraryDay, Coordinates } from '../types';
 import { MOCK_PACKAGES, INSURANCE_OPTIONS } from '../constants.tsx';
 
@@ -616,7 +616,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
                     <MapIcon className="w-5 h-5 mr-2 text-purple-400" />
                     {t('aiPlanner.mapView')}
                   </h3>
-                  <ItineraryMap
+                  <MapView
                     days={mapDays}
                     center={mapCenter}
                     selectedDay={expandedDay}
