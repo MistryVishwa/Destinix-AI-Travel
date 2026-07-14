@@ -14,7 +14,7 @@ interface CollaborativeTripsProps {
 
 export const CollaborativeTrips: React.FC<CollaborativeTripsProps> = ({ user }) => {
   const navigate = useNavigate();
-  const { groups, loading: groupsLoading, createGroup, deleteGroup } = useGroups();
+  const { groups, loading: groupsLoading, createGroup, deleteGroup, fetchGroups } = useGroups();
   const { invitations, loading: invitesLoading, acceptInvite, declineInvite, fetchInvitations } = useInvitations();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [syncing, setSyncing] = useState(true);
@@ -39,9 +39,9 @@ export const CollaborativeTrips: React.FC<CollaborativeTripsProps> = ({ user }) 
 
   const handleAcceptInvite = async (inviteId: string) => {
     await acceptInvite(inviteId);
-    // Refresh invites and group lists
+    // Refresh invites and group lists via React state instead of full page reload
     fetchInvitations();
-    window.location.reload(); // Hard reload or state update to refresh useGroups
+    fetchGroups();
   };
 
   const handleDeclineInvite = async (inviteId: string) => {
