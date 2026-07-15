@@ -266,11 +266,15 @@ model PriceAlert {
   packageId       String
   targetPrice     Float
   createdAt       DateTime      @default(now())
-  
+  // Set once the price-drop job has emailed the user for this alert, so the
+  // same alert isn't re-notified on every cron run. Null means "not yet notified".
+  notifiedAt      DateTime?
+
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   package         TravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, packageId])
+  @@index([notifiedAt])
 }
 
 model TripJournal {
