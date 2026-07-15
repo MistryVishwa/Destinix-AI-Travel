@@ -135,9 +135,9 @@ export interface User {
   preferences?: string[];
   avatar?: string;
   token?: string;
+  isAdmin?: boolean; // Role-based access flag for the admin dashboard
   savedPackages?: string[]; // IDs of bookmarked packages
   priceAlerts?: PriceAlert[];
-  isAdmin?: boolean; // Role-based access flag for the admin dashboard
 }
 
 export interface Booking {
