@@ -38,8 +38,12 @@ const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "admin@destinix.com,admin@trav
 // Shared secret used to sign/verify auth tokens (matches authRoutes/userRoutes)
 const JWT_SECRET = process.env.JWT_SECRET || 'destinix_fallback_secret_key_change_in_prod';
 
-// Middleware to verify if the request is from an authorized Admin
-const isAdmin = (req: any, res: any, next: any) => {
+// Middleware to verify if the request is from an authorized Admin.
+// Primary check is the DB-backed `isAdmin` role (embedded in the JWT at login/register
+// time). The ADMIN_EMAILS allowlist is kept as a bootstrap/back-compat fallback so
+// operators can grant admin access via env var before flipping the DB flag, and so
+// tokens issued before the `isAdmin` field existed keep working.
+const isAdmin = async (req: any, res: any, next: any) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Unauthorized. Missing token." });
@@ -48,9 +52,22 @@ const isAdmin = (req: any, res: any, next: any) => {
   const token = authHeader.split(" ")[1];
   try {
     // jwt.verify checks the signature and expiry, throwing on tampered/expired tokens.
-    const payload = jwt.verify(token, JWT_SECRET) as { id: string; email: string };
+    const payload = jwt.verify(token, JWT_SECRET) as { id: string; email: string; isAdmin?: boolean };
 
-    if (!ADMIN_EMAILS.includes(payload.email.toLowerCase())) {
+    let hasAdminRole = payload.isAdmin === true;
+
+    if (!hasAdminRole && ADMIN_EMAILS.includes(payload.email.toLowerCase())) {
+      hasAdminRole = true;
+    }
+
+    // Fall back to a fresh DB lookup in case the role was granted after the token
+    // was issued (JWTs are valid for 7 days and are not re-checked otherwise).
+    if (!hasAdminRole) {
+      const dbUser = await prisma.user.findUnique({ where: { id: payload.id }, select: { isAdmin: true } });
+      hasAdminRole = !!dbUser?.isAdmin;
+    }
+
+    if (!hasAdminRole) {
       return res.status(403).json({ error: "Forbidden. Admin access required." });
     }
 

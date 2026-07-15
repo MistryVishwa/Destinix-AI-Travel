@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sun, Moon } from 'lucide-react';
 import { Page, User } from '../types';
+import { isAdminUser } from '../services/authService';
 
 interface NavbarProps {
   currentPage: Page;
@@ -38,7 +39,7 @@ const LanguageSwitcher: React.FC = () => {
 const Navbar: React.FC<NavbarProps> = ({ currentPage, setCurrentPage, user, onSignInClick, onLogout, theme, toggleTheme }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const isAdmin = user && ['admin@destinix.com', 'admin@travel.com'].includes(user.email.toLowerCase());
+  const isAdmin = isAdminUser(user);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
