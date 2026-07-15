@@ -7,8 +7,8 @@ import PackageCard from './PackageCard';
 import { generateReceiptPDF } from '../utils/receipt';
 import { formatCurrency } from '../utils/currency';
 import InvoiceTemplate from './InvoiceTemplate';
-import ExpenseTracker from './ExpenseTracker';
 import { cacheBookings, getCachedBookings } from '../services/itineraryCache';
+import ExpenseTracker from './ExpenseTracker';
 import {
   Calendar, MapPin, CreditCard, Download, ChevronRight,
   Clock, CheckCircle, AlertCircle, Loader2, Plane,
