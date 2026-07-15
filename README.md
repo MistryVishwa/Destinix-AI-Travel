@@ -26,12 +26,12 @@ Destinix is built to feel highly premium:
 ## 🚀 Key Features
 
 * **🤖 Gemini AI Travel Planner**: Input your destination, budget, duration, and style. Our customized Gemini API integrations compile day-by-day itineraries with travel highlights.
+* **💱 Budget & Expense Tracker with Currency Conversion**: Set a home currency and an overall trip budget in your profile, log itemized expenses (flights, stays, activities, etc.), and see a live budget-vs-spending breakdown on both the Profile and Booking screens with prices converted to your home currency.
 * **🏝️ Curated Experiences Catalog**: Filter through domestic, international, and luxury packages with real-time detail showcases, highlights, and cost structures.
 * **💬 Live Advisor Chatbot**: Chat directly with an interactive travel assistant to ask questions about your trip, suggestions, or help with booking.
 * **🔒 Firebase Authentication**: Fully secure client-side user accounts allowing bookmarked trips, saved plans, and customized profile updates.
 * **🎫 Secure Booking & Receipts**: A booking flow with Gmail SMTP integration to send customized PDFs and transaction details directly to the user's inbox.
 * **💸 Price Drop Alerts**: Set targeted budget alerts for packages to receive notifications when travel pricing goes down.
-* **💱 Budget & Expense Tracker with Currency Conversion**: Set a home currency and an overall trip budget in your profile, log itemized expenses (flights, stays, activities, etc.), and see a live budget-vs-spending breakdown on both the Profile and Booking screens with prices converted to your home currency.
 
 ---
 
