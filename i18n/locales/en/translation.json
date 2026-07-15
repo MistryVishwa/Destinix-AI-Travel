@@ -373,6 +373,8 @@
     "viewItinerary": "View Itinerary",
     "manageBookingsSubtitle": "Manage your upcoming adventures and view past trips.",
     "fetchingBookings": "Fetching your bookings...",
+    "offlineBadge": "Offline — showing cached data",
+    "offlineCachedAt": "Last synced {{date}}",
     "bookingConfirmed": "Booking Confirmed",
     "bookedOn": "Booked On",
     "amount": "Amount",

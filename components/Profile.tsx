@@ -8,10 +8,11 @@ import { generateReceiptPDF } from '../utils/receipt';
 import { formatCurrency } from '../utils/currency';
 import InvoiceTemplate from './InvoiceTemplate';
 import ExpenseTracker from './ExpenseTracker';
+import { cacheBookings, getCachedBookings } from '../services/itineraryCache';
 import {
   Calendar, MapPin, CreditCard, Download, ChevronRight,
   Clock, CheckCircle, AlertCircle, Loader2, Plane,
-  Hotel, Users, Bell, User as UserIcon, Wallet
+  Hotel, Users, Bell, User as UserIcon, Wallet, WifiOff
 } from 'lucide-react';
 
 interface ProfileProps {
@@ -46,6 +47,24 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
   const [activeBookingForReceipt, setActiveBookingForReceipt] = useState<Booking | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Offline / cached-data support: when a live fetch of bookings isn't
+  // possible (device offline or the request fails), fall back to the last
+  // successfully fetched copy stored in localStorage and clearly flag it.
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [showingCachedBookings, setShowingCachedBookings] = useState(false);
+  const [bookingsCachedAt, setBookingsCachedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   useEffect(() => {
     const trips = JSON.parse(localStorage.getItem('destinix_saved_trips') || '[]');
     setSavedTrips(trips);
@@ -57,16 +76,45 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
     }
   }, [activeTab, user.email]);
 
+  const sortBookings = (data: Booking[]) =>
+    [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const loadCachedBookings = (): boolean => {
+    const cached = getCachedBookings<Booking>(user.email);
+    if (cached && cached.bookings.length > 0) {
+      setBookings(sortBookings(cached.bookings));
+      setShowingCachedBookings(true);
+      setBookingsCachedAt(cached.cachedAt);
+      return true;
+    }
+    return false;
+  };
+
   const fetchBookings = async () => {
+    // No network: skip straight to whatever we have cached locally.
+    if (!navigator.onLine) {
+      loadCachedBookings();
+      return;
+    }
+
     setFetchingBookings(true);
     try {
       const res = await fetch(`/api/my-bookings?email=${encodeURIComponent(user.email)}`);
       if (res.ok) {
         const data = await res.json();
-        setBookings(data.sort((a: Booking, b: Booking) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        const sorted = sortBookings(data);
+        setBookings(sorted);
+        setShowingCachedBookings(false);
+        setBookingsCachedAt(null);
+        cacheBookings(user.email, sorted);
+      } else {
+        // Server reachable but errored - fall back to cache if we have one.
+        loadCachedBookings();
       }
     } catch (err) {
       console.error("Failed to fetch bookings:", err);
+      // Network error (offline, DNS failure, etc.) - show cached data instead.
+      loadCachedBookings();
     } finally {
       setFetchingBookings(false);
     }
@@ -328,6 +376,25 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                   <Clock className={`w-5 h-5 ${fetchingBookings ? 'animate-spin' : ''}`} />
                 </button>
               </div>
+
+              {showingCachedBookings && (
+                <div
+                  role="status"
+                  className="flex items-center gap-3 mb-6 bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-2xl px-5 py-3 text-sm"
+                >
+                  <WifiOff className="w-4 h-4 shrink-0" />
+                  <span className="font-bold uppercase tracking-widest text-[11px]">
+                    {t('profile.offlineBadge', 'Offline — showing cached data')}
+                  </span>
+                  {bookingsCachedAt && (
+                    <span className="text-amber-400/70 text-xs">
+                      {t('profile.offlineCachedAt', 'Last synced {{date}}', {
+                        date: new Date(bookingsCachedAt).toLocaleString(),
+                      })}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {fetchingBookings && bookings.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 space-y-4">

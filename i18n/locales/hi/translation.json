@@ -373,6 +373,8 @@
     "viewItinerary": "यात्रा कार्यक्रम देखें",
     "manageBookingsSubtitle": "अपने आने वाले रोमांच को प्रबंधित करें और पिछली यात्राएं देखें।",
     "fetchingBookings": "आपकी बुकिंग प्राप्त की जा रही है...",
+    "offlineBadge": "ऑफ़लाइन — कैश्ड डेटा दिखाया जा रहा है",
+    "offlineCachedAt": "अंतिम सिंक {{date}}",
     "bookingConfirmed": "बुकिंग की पुष्टि हुई",
     "bookedOn": "बुक किया गया",
     "amount": "राशि",
