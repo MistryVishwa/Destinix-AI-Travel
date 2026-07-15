@@ -2,11 +2,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Wallet, Trash2, Loader2 } from 'lucide-react';
 import type { Expense, ExpenseCategory } from '../types';
-import { SUPPORTED_CURRENCIES } from '../services/currencyService';
+import { SUPPORTED_CURRENCIES, convertAmount } from '../services/currencyService';
 import { formatCurrency } from '../utils/currency';
 
 interface ExpenseTrackerProps {
   userId: string;
+  /** User's home currency (from their profile). Defaults to 'INR' when unset. */
+  preferredCurrency?: string;
+  /** Overall trip budget, denominated in preferredCurrency. When set, a budget-vs-spending bar is shown. */
+  tripBudget?: number;
 }
 
 const CATEGORY_LABELS: Record<ExpenseCategory, { label: string; icon: string; color: string }> = {
@@ -17,11 +21,12 @@ const CATEGORY_LABELS: Record<ExpenseCategory, { label: string; icon: string; co
   other: { label: 'Other', icon: '📦', color: 'bg-gray-500' },
 };
 
-const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ userId }) => {
+const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ userId, preferredCurrency = 'INR', tripBudget }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [totalSpentHome, setTotalSpentHome] = useState<number | null>(null);
 
   const [tripLabel, setTripLabel] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('food');
@@ -52,6 +57,27 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ userId }) => {
     () => expenses.reduce((sum, e) => sum + e.amountINR, 0),
     [expenses]
   );
+
+  // Expenses are stored/summed in INR (see server.ts /api/expenses). When the user's home currency
+  // isn't INR, convert the running total for display using the free currency API (with static
+  // fallback) documented in the README. A failed conversion just falls back to showing INR.
+  useEffect(() => {
+    if (preferredCurrency === 'INR') {
+      setTotalSpentHome(null);
+      return;
+    }
+    let cancelled = false;
+    convertAmount(totalSpentINR, 'INR', preferredCurrency)
+      .then((amount) => { if (!cancelled) setTotalSpentHome(amount); })
+      .catch(() => { if (!cancelled) setTotalSpentHome(null); });
+    return () => { cancelled = true; };
+  }, [totalSpentINR, preferredCurrency]);
+
+  const displayTotal = totalSpentHome ?? totalSpentINR;
+  const displayCurrency = totalSpentHome != null ? preferredCurrency : 'INR';
+  const budgetUsedPct = tripBudget && tripBudget > 0
+    ? Math.round((displayTotal / tripBudget) * 100)
+    : null;
 
   const categoryBreakdown = useMemo(() => {
     const breakdown: Record<ExpenseCategory, number> = {
@@ -120,9 +146,33 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ userId }) => {
         </div>
         <div className="text-right">
           <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Total Spent</p>
-          <p className="text-2xl font-bold text-white">{formatCurrency(totalSpentINR, 'INR')}</p>
+          <p className="text-2xl font-bold text-white">{formatCurrency(displayTotal, displayCurrency)}</p>
+          {displayCurrency !== 'INR' && (
+            <p className="text-xs text-gray-500">{formatCurrency(totalSpentINR, 'INR')}</p>
+          )}
         </div>
       </div>
+
+      {/* Budget vs. spending */}
+      {tripBudget != null && budgetUsedPct != null && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Trip Budget Used</span>
+            <span className={`text-xs font-bold ${budgetUsedPct > 100 ? 'text-red-400' : budgetUsedPct > 80 ? 'text-amber-400' : 'text-emerald-400'}`}>
+              {budgetUsedPct}% of {formatCurrency(tripBudget, preferredCurrency)}
+            </span>
+          </div>
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full ${budgetUsedPct > 100 ? 'bg-red-500' : budgetUsedPct > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+              style={{ width: `${Math.min(budgetUsedPct, 100)}%` }}
+            />
+          </div>
+          {budgetUsedPct > 100 && (
+            <p className="text-xs text-red-400 mt-2">You've exceeded your trip budget.</p>
+          )}
+        </div>
+      )}
 
       {/* Category breakdown */}
       <div className="flex flex-wrap gap-2 mb-8">

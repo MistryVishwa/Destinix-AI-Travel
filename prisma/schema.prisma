@@ -32,6 +32,8 @@ model User {
   avatarUrl             String?
   password              String?
   preferences           String[]                @default([])
+  preferredCurrency     String                  @default("INR")
+  tripBudget            Float?
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
   

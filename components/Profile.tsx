@@ -8,6 +8,7 @@ import { generateReceiptPDF } from '../utils/receipt';
 import { formatCurrency } from '../utils/currency';
 import InvoiceTemplate from './InvoiceTemplate';
 import ExpenseTracker from './ExpenseTracker';
+import { SUPPORTED_CURRENCIES } from '../services/currencyService';
 import {
   Calendar, MapPin, CreditCard, Download, ChevronRight,
   Clock, CheckCircle, AlertCircle, Loader2, Plane,
@@ -35,7 +36,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
     name: user.name,
     phone: user.phone || '',
     address: user.address || '',
-    preferences: (user.preferences || []).join(', ')
+    preferences: (user.preferences || []).join(', '),
+    preferredCurrency: user.preferredCurrency || 'INR',
+    tripBudget: user.tripBudget != null ? String(user.tripBudget) : ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -90,7 +93,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
     }, 800);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -99,11 +102,14 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
     setLoading(true);
     setMessage(null);
     try {
+      const parsedBudget = formData.tripBudget.trim() === '' ? undefined : parseFloat(formData.tripBudget);
       await onUpdateProfile({
         name: formData.name,
         phone: formData.phone,
         address: formData.address,
-        preferences: formData.preferences.split(',').map(p => p.trim()).filter(p => p)
+        preferences: formData.preferences.split(',').map(p => p.trim()).filter(p => p),
+        preferredCurrency: formData.preferredCurrency,
+        tripBudget: parsedBudget != null && !isNaN(parsedBudget) ? parsedBudget : undefined
       });
       setMessage({ type: 'success', text: t('profile.successProfileUpdated') });
     } catch (err: any) {
@@ -239,6 +245,36 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-2">{t('profile.travelPreferences')}</label>
                   <input name="preferences" type="text" value={formData.preferences} onChange={handleInputChange} placeholder={t('profile.preferencesPlaceholder')} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('profile.homeCurrency')}</label>
+                    <select
+                      name="preferredCurrency"
+                      value={formData.preferredCurrency}
+                      onChange={handleInputChange}
+                      className="w-full bg-gray-900 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    >
+                      {SUPPORTED_CURRENCIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-2">{t('profile.homeCurrencyHelp')}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">{t('profile.tripBudget')}</label>
+                    <input
+                      name="tripBudget"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.tripBudget}
+                      onChange={handleInputChange}
+                      placeholder={t('profile.tripBudgetPlaceholder')}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">{t('profile.tripBudgetHelp')}</p>
+                  </div>
                 </div>
                 <button type="submit" disabled={loading} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-xl transition-all shadow-xl shadow-indigo-600/20">
                   {loading ? t('profile.savingChanges') : t('profile.saveProfileChanges')}
@@ -468,7 +504,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onNavigate, on
           )}
 
           {activeTab === 'expenses' && (
-            <ExpenseTracker userId={user.id} />
+            <ExpenseTracker userId={user.id} preferredCurrency={user.preferredCurrency || 'INR'} tripBudget={user.tripBudget} />
           )}
 
           {activeTab === 'alerts' && (

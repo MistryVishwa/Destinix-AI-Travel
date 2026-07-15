@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { TravelPackage, User } from '../types';
 import { formatCurrency, calculateInr } from '../utils/currency';
+import { convertAmount } from '../services/currencyService';
 import { generateReceiptPDF } from '../utils/receipt';
 import { jsPDF } from 'jspdf';
 import InvoiceTemplate from "./InvoiceTemplate";
@@ -467,6 +468,42 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
       total
     };
   }, [pkg, selectedAddons, flightDetails.class, numTravelers, selectedVehicle, bikeDetails]);
+
+  // Convert the running total into the user's home currency (preferredCurrency), when it differs
+  // from the package's currency. Uses the free, keyless currency API via services/currencyService.ts
+  // (falls back to a static rate table on failure, see README for details) so a failed fetch never
+  // breaks the page — it just leaves the converted amount blank and this section hidden.
+  const homeCurrency = user?.preferredCurrency;
+  const [convertedTotal, setConvertedTotal] = useState<number | null>(null);
+  const [conversionUnavailable, setConversionUnavailable] = useState(false);
+
+  useEffect(() => {
+    if (!homeCurrency || homeCurrency === pkg.currency) {
+      setConvertedTotal(null);
+      setConversionUnavailable(false);
+      return;
+    }
+    let cancelled = false;
+    setConversionUnavailable(false);
+    convertAmount(pricing.total, pkg.currency, homeCurrency)
+      .then((amount) => {
+        if (!cancelled) setConvertedTotal(amount);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setConvertedTotal(null);
+          setConversionUnavailable(true);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [pricing.total, pkg.currency, homeCurrency]);
+
+  // Budget-vs-spending: compare this booking's total (converted to the user's home currency when
+  // possible) against the overall trip budget they set in their profile.
+  const budgetComparisonAmount = convertedTotal ?? (homeCurrency === pkg.currency ? pricing.total : null);
+  const budgetUsedPct = user?.tripBudget && budgetComparisonAmount != null
+    ? Math.round((budgetComparisonAmount / user.tripBudget) * 100)
+    : null;
 
   return (
     <div className="pt-20 pb-24 bg-gray-950 min-h-screen">
@@ -1176,7 +1213,44 @@ const BookingPage: React.FC<BookingPageProps> = ({ pkg, user, onBack, onConfirm 
                         </span>
                       </div>
                     )}
+                    {homeCurrency && homeCurrency !== pkg.currency && (
+                      <div className="text-right mt-1">
+                        {convertedTotal != null ? (
+                          <span className="text-sm text-teal-400 font-bold">
+                            {t('bookingPage.convertedApprox', { amount: formatCurrency(convertedTotal, homeCurrency) })}
+                          </span>
+                        ) : conversionUnavailable ? (
+                          <span className="text-xs text-gray-500">{t('bookingPage.conversionUnavailable')}</span>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
+
+                  {user?.tripBudget != null && budgetUsedPct != null && (
+                    <div className="pt-6 border-t border-white/10">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                          {t('bookingPage.budgetUsedLabel')}
+                        </span>
+                        <span className={`text-xs font-bold ${budgetUsedPct > 100 ? 'text-red-400' : budgetUsedPct > 80 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          {budgetUsedPct}%
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${budgetUsedPct > 100 ? 'bg-red-500' : budgetUsedPct > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${Math.min(budgetUsedPct, 100)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {budgetUsedPct > 100
+                          ? t('bookingPage.overBudgetWarning')
+                          : t('bookingPage.budgetRemaining', {
+                              amount: formatCurrency(Math.max(user.tripBudget - (budgetComparisonAmount || 0), 0), homeCurrency || 'INR')
+                            })}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <motion.button 
