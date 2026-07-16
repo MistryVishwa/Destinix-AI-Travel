@@ -26,6 +26,7 @@ Destinix is built to feel highly premium:
 ## 🚀 Key Features
 
 * **🤖 Gemini AI Travel Planner**: Input your destination, budget, duration, and style. Our customized Gemini API integrations compile day-by-day itineraries with travel highlights.
+* **💱 Budget & Expense Tracker with Currency Conversion**: Set a home currency and an overall trip budget in your profile, log itemized expenses (flights, stays, activities, etc.), and see a live budget-vs-spending breakdown on both the Profile and Booking screens with prices converted to your home currency.
 * **🏝️ Curated Experiences Catalog**: Filter through domestic, international, and luxury packages with real-time detail showcases, highlights, and cost structures.
 * **💬 Live Advisor Chatbot**: Chat directly with an interactive travel assistant to ask questions about your trip, suggestions, or help with booking.
 * **🔒 Firebase Authentication**: Fully secure client-side user accounts allowing bookmarked trips, saved plans, and customized profile updates.
@@ -100,6 +101,23 @@ Create a `.env` file at the root of the project (you can use `.env.example` as a
 
 ---
 
+## 💱 Currency Conversion & Budget Tracking
+
+Users can set a **home currency** and an **overall trip budget** on the Profile → Profile Settings tab. These are persisted on the `User` model via Prisma (`preferredCurrency`, `tripBudget`).
+
+* **Rate source**: Live rates are fetched from the free, keyless [`@fawazahmed0/currency-api`](https://github.com/fawazahmed0/exchange-api) (`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{base}.json`), which requires no signup or API key. See `services/currencyService.ts` (`convertAmount`, `convertToINR`).
+* **Refresh interval**: Fetched rate tables are cached in-memory per base currency for **1 hour** (`CACHE_TTL_MS` in `services/currencyService.ts`) to avoid re-fetching on every render; after that they're refetched on the next conversion.
+* **Fallback**: If the live request fails (network error, rate limiting, etc.), conversion falls back to the static table in `utils/currency.ts` (`CONVERSION_RATES`, pivoted through INR). If neither is available for a currency pair, the converted amount is simply omitted from the UI — a failed fetch never breaks the page.
+* **Where it shows up**:
+  * **Profile → Expense Tracker** (`components/ExpenseTracker.tsx`): total spend converted to your home currency, plus a budget-used progress bar (green/amber/red) once a trip budget is set.
+  * **Booking page** (`components/BookingPage.tsx`): the price summary shows the booking total converted to your home currency (when different from the package's currency) and how much of your remaining trip budget this booking would use.
+* **Supported currencies**: `INR, USD, EUR, GBP, AED, SGD` (`SUPPORTED_CURRENCIES` in `services/currencyService.ts`).
+* No new environment variable is required — the currency API is public and keyless.
+
+> **Note for deployers**: after pulling schema changes that add `preferredCurrency`/`tripBudget` to `User`, run `npx prisma generate` and then `npx prisma migrate dev` (or `db push`) against a real database — this was not run against a live DB in development since no `DATABASE_URL` was configured in this environment.
+
+---
+
 ## 🏁 Local Installation & Development
 
 ### 1. Prerequisites
@@ -143,7 +161,7 @@ npm run preview
 
 * [ ] **Google Maps API**: Embed active mapping routes directly onto generated AI itineraries.
 * [ ] **Collaborative Planning**: Invite friends to view, edit, and co-book custom itineraries.
-* [ ] **Expense Tracker**: Add a currency-converter enabled budgeting calculator for booking.
+* [x] **Expense Tracker**: Add a currency-converter enabled budgeting calculator for booking.
 * [ ] **Offline Mode**: Allow PDF itinerary downloading and local cached viewing of trip bookings.
 
 ---

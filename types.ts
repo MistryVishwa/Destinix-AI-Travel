@@ -137,6 +137,8 @@ export interface User {
   token?: string;
   savedPackages?: string[]; // IDs of bookmarked packages
   priceAlerts?: PriceAlert[];
+  preferredCurrency?: string; // Home currency for converted price/budget display, e.g. 'USD'
+  tripBudget?: number; // Overall trip budget, denominated in preferredCurrency
 }
 
 export interface Booking {
