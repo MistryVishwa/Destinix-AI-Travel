@@ -17,8 +17,8 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'destinix_fallback_secret_key_change_in_prod';
 
 // Helper to generate token
-const generateToken = (userId: string, email: string) => {
-  return jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
+const generateToken = (userId: string, email: string, isAdmin: boolean) => {
+  return jwt.sign({ id: userId, email, isAdmin }, JWT_SECRET, { expiresIn: '7d' });
 };
 
 // POST /api/auth/register
@@ -51,7 +51,7 @@ router.post('/register', async (req, res) => {
       }
     });
 
-    const token = generateToken(user.id, user.email);
+    const token = generateToken(user.id, user.email, user.isAdmin);
 
     res.status(201).json({
       success: true,
@@ -61,6 +61,7 @@ router.post('/register', async (req, res) => {
         email: user.email,
         avatar: user.avatar || user.avatarUrl,
         preferences: user.preferences,
+        isAdmin: user.isAdmin,
       },
       token
     });
@@ -91,7 +92,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const token = generateToken(user.id, user.email);
+    const token = generateToken(user.id, user.email, user.isAdmin);
 
     res.json({
       success: true,
@@ -101,6 +102,7 @@ router.post('/login', async (req, res) => {
         email: user.email,
         avatar: user.avatar || user.avatarUrl,
         preferences: user.preferences,
+        isAdmin: user.isAdmin,
       },
       token
     });

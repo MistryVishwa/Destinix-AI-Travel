@@ -23,7 +23,7 @@ import DestinationGuide from './pages/DestinationGuide';
 import { PackageSkeleton } from './components/Skeleton';
 import { MOCK_PACKAGES, MOODS, CATEGORIES } from './constants.tsx';
 import PrivacyPolicy from "./components/PrivacyPolicy";
-import { getCurrentUser, logout as performLogout, updateProfile } from './services/authService';
+import { getCurrentUser, logout as performLogout, updateProfile, isAdminUser } from './services/authService';
 import AdminDashboard from './components/AdminDashboard';
 import { getPackages } from './services/packageService';
 import { chatWithAdvisor } from './services/geminiService';
@@ -775,10 +775,11 @@ const App: React.FC = () => {
             <Routes>
               <Route path="/" element={renderHome()} />
               <Route path="/planner" element={
-                <AIPlanner 
-                  user={user} 
-                  onNavigate={handleNavPageChange} 
-                  onSignInClick={() => setShowAuth(true)} 
+                <AIPlanner
+                  user={user}
+                  onNavigate={handleNavPageChange}
+                  onSignInClick={() => setShowAuth(true)}
+                  packages={packages}
                 />
               } />
               <Route path="/packages" element={renderPackages()} />
@@ -814,7 +815,7 @@ const App: React.FC = () => {
               <Route path="/community" element={<CommunityFeed onNavigate={handleNavPageChange} />} />
               <Route path="/journals/new" element={user ? <CreateJournal user={user} /> : <Navigate to="/" />} />
               <Route path="/journals/:id" element={<JournalDetails />} />
-              <Route path="/admin" element={user && ['admin@destinix.com', 'admin@travel.com'].includes(user.email.toLowerCase()) ? <AdminDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
+              <Route path="/admin" element={user && isAdminUser(user) ? <AdminDashboard user={user} onLogout={handleLogout} /> : <Navigate to="/" />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </motion.div>

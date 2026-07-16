@@ -3,6 +3,17 @@ import { User } from '../types';
 const CURRENT_USER_KEY = 'destinix_current_user';
 const API_BASE = '/api';
 
+// Client-side mirror of the server's bootstrap admin allowlist (server.ts / seed.ts).
+// The DB-backed `isAdmin` flag (returned on the user object after login/register) is
+// the source of truth for access control server-side; this is only used to keep the
+// UI from flashing the admin nav link/route for pre-migration sessions.
+const ADMIN_EMAIL_FALLBACK = ['admin@destinix.com', 'admin@travel.com'];
+
+export const isAdminUser = (user: User | null): boolean => {
+  if (!user) return false;
+  return !!user.isAdmin || ADMIN_EMAIL_FALLBACK.includes(user.email.toLowerCase());
+};
+
 export const register = async (name: string, email: string, password: string): Promise<User> => {
   const response = await fetch(`${API_BASE}/auth/register`, {
     method: 'POST',

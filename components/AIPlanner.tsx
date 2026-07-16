@@ -24,6 +24,10 @@ interface AIPlannerProps {
   user: User | null;
   onNavigate: (page: Page) => void;
   onSignInClick: () => void;
+  // DB-backed packages (fetched once in App.tsx via GET /api/packages). Falls back to
+  // the hardcoded MOCK_PACKAGES constant when not supplied so this component still
+  // works if ever rendered standalone (e.g. in tests).
+  packages?: TravelPackage[];
 }
 
 const TypingText: React.FC<{ text: string; speed?: number }> = ({ text, speed = 10 }) => {
@@ -42,7 +46,7 @@ const TypingText: React.FC<{ text: string; speed?: number }> = ({ text, speed = 
   return <span>{displayedText}</span>;
 };
 
-const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }) => {
+const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick, packages = MOCK_PACKAGES }) => {
   const { t, i18n } = useTranslation();
   const [searchParams] = useSearchParams();
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -311,7 +315,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
 
   // Dynamic Images for Destination
   const destinationImages = useMemo(() => {
-    const matchingPkg = MOCK_PACKAGES.find(p => p.destination.toLowerCase().includes(destination.toLowerCase()));
+    const matchingPkg = packages.find(p => p.destination.toLowerCase().includes(destination.toLowerCase()));
     if (matchingPkg && matchingPkg.gallery) {
       return matchingPkg.gallery;
     }
@@ -322,7 +326,7 @@ const AIPlanner: React.FC<AIPlannerProps> = ({ user, onNavigate, onSignInClick }
       `https://picsum.photos/seed/${seed}-3/1200/800`,
       `https://picsum.photos/seed/${seed}-4/1200/800`,
     ];
-  }, [destination, plan]);
+  }, [destination, plan, packages]);
 
   useEffect(() => {
     if (destinationImages.length > 0) {
