@@ -9,6 +9,7 @@ import path from "path";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
+import cron from "node-cron";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
@@ -22,6 +23,7 @@ import authRoutes from "./server/routes/authRoutes";
 import userRoutes from "./server/routes/userRoutes";
 import { initSocket } from "./server/collaboration/socket/socketHandler";
 import journalRoutes from "./server/routes/journalRoutes";
+import { checkPriceAlerts } from "./server/jobs/priceAlertJob";
 
 dotenv.config();
 
@@ -914,6 +916,24 @@ async function setupVite() {
 }
 
 setupVite();
+
+// Price Drop Alerts background job: re-checks stored alert thresholds against
+// current package prices every hour and emails users whose target price has
+// been met. Hourly is a sensible default for "price drop" freshness without
+// hammering the DB or SMTP provider; tune via cron syntax below if needed.
+// Wrapped so a scheduling/DB error here can never crash server startup or
+// take down the running process - it's only logged (see priceAlertJob.ts for
+// per-alert error isolation).
+try {
+  cron.schedule("0 * * * *", () => {
+    checkPriceAlerts().catch((error: any) => {
+      console.error("[price-alert-job] Unhandled error during scheduled run:", error?.message || error);
+    });
+  });
+  console.log("Price drop alert job scheduled (runs hourly).");
+} catch (error: any) {
+  console.error("Failed to schedule price drop alert job:", error?.message || error);
+}
 
 // Graceful shutdown - close DB connection
 process.on('SIGTERM', async () => {

@@ -31,7 +31,7 @@ Destinix is built to feel highly premium:
 * **💬 Live Advisor Chatbot**: Chat directly with an interactive travel assistant to ask questions about your trip, suggestions, or help with booking.
 * **🔒 Firebase Authentication**: Fully secure client-side user accounts allowing bookmarked trips, saved plans, and customized profile updates.
 * **🎫 Secure Booking & Receipts**: A booking flow with Gmail SMTP integration to send customized PDFs and transaction details directly to the user's inbox.
-* **💸 Price Drop Alerts**: Set targeted budget alerts for packages to receive notifications when travel pricing goes down.
+* **💸 Price Drop Alerts**: Set targeted budget alerts for packages (stored in the `PriceAlert` model — user, package, target price, and a `notifiedAt` flag). A `node-cron` job in `server.ts` re-checks all pending alerts against current package prices every hour and emails users via the existing Gmail/SMTP setup when a target price is met; failures are logged per-alert so one bad alert can't block the rest of the batch.
 
 ---
 
