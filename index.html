@@ -158,6 +158,41 @@
         background-size: 200% 100%;
         animation: shimmer 2s infinite linear;
       }
+
+      /* Dual-range price slider (two overlapping <input type="range">) */
+      .range-thumb {
+        height: 1.5rem;
+        margin: 0;
+      }
+      .range-thumb::-webkit-slider-thumb {
+        pointer-events: auto;
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 9999px;
+        background: #6366f1;
+        border: 2px solid white;
+        cursor: pointer;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      }
+      .range-thumb::-moz-range-thumb {
+        pointer-events: auto;
+        width: 16px;
+        height: 16px;
+        border-radius: 9999px;
+        background: #6366f1;
+        border: 2px solid white;
+        cursor: pointer;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      }
+      .range-thumb::-webkit-slider-runnable-track {
+        -webkit-appearance: none;
+        background: transparent;
+      }
+      .range-thumb::-moz-range-track {
+        background: transparent;
+      }
     </style>
   <script type="importmap">
 {

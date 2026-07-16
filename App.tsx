@@ -22,6 +22,7 @@ import BookingPage from './components/BookingPage';
 import DestinationGuide from './pages/DestinationGuide';
 import { PackageSkeleton } from './components/Skeleton';
 import { MOCK_PACKAGES, MOODS, CATEGORIES } from './constants.tsx';
+import PackageFilters, { DurationBucket, SortOption, TripType, TRIP_TYPES } from './components/PackageFilters';
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import { getCurrentUser, logout as performLogout, updateProfile, isAdminUser } from './services/authService';
 import AdminDashboard from './components/AdminDashboard';
@@ -313,6 +314,100 @@ const App: React.FC = () => {
     if (activeCategory === 'All') return packages;
     return packages.filter(pkg => pkg.type === activeCategory);
   }, [activeCategory, packages]);
+
+  // ---- Advanced package filters (price range, duration, trip type, sort) ----
+  // Persisted in the URL query string via searchParams so results are bookmarkable/shareable.
+  const priceBounds = useMemo(() => {
+    const prices = packages.map(p => p.price).filter(p => Number.isFinite(p));
+    if (prices.length === 0) return { min: 0, max: 0 };
+    return { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) };
+  }, [packages]);
+
+  const minPriceParam = searchParams.get('minPrice');
+  const maxPriceParam = searchParams.get('maxPrice');
+  const minPrice = minPriceParam !== null && !isNaN(Number(minPriceParam))
+    ? Math.max(priceBounds.min, Number(minPriceParam))
+    : priceBounds.min;
+  const maxPrice = maxPriceParam !== null && !isNaN(Number(maxPriceParam))
+    ? Math.min(priceBounds.max, Number(maxPriceParam))
+    : priceBounds.max;
+
+  const durationFilter = (searchParams.get('duration') as DurationBucket) || 'any';
+
+  const tripTypeParam = searchParams.get('tripType') || '';
+  const tripTypes = useMemo(
+    () => tripTypeParam.split(',').filter((t): t is TripType => TRIP_TYPES.includes(t as TripType)),
+    [tripTypeParam]
+  );
+
+  const sortBy = (searchParams.get('sort') as SortOption) || 'default';
+
+  const hasActiveFilters = minPriceParam !== null || maxPriceParam !== null ||
+    durationFilter !== 'any' || tripTypes.length > 0 || sortBy !== 'default';
+
+  const updateFilterParams = (updates: Record<string, string | null>) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === null || value === '') next.delete(key);
+        else next.set(key, value);
+      });
+      return next;
+    }, { replace: true });
+  };
+
+  const handlePriceChange = (min: number, max: number) => {
+    updateFilterParams({
+      minPrice: min <= priceBounds.min ? null : String(min),
+      maxPrice: max >= priceBounds.max ? null : String(max)
+    });
+  };
+
+  const handleDurationChange = (bucket: DurationBucket) => {
+    updateFilterParams({ duration: bucket === 'any' ? null : bucket });
+  };
+
+  const handleTripTypeToggle = (type: TripType) => {
+    const next = tripTypes.includes(type)
+      ? tripTypes.filter(t => t !== type)
+      : [...tripTypes, type];
+    updateFilterParams({ tripType: next.length > 0 ? next.join(',') : null });
+  };
+
+  const handleSortChange = (sort: SortOption) => {
+    updateFilterParams({ sort: sort === 'default' ? null : sort });
+  };
+
+  const resetAllFilters = () => {
+    setSearchParams({});
+  };
+
+  const getDurationDays = (duration: string) => {
+    const match = duration.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
+
+  const matchesDurationBucket = (days: number, bucket: DurationBucket) => {
+    if (bucket === 'short') return days <= 3;
+    if (bucket === 'medium') return days >= 4 && days <= 6;
+    if (bucket === 'long') return days >= 7;
+    return true;
+  };
+
+  const advancedFilteredPackages = useMemo(() => {
+    let list = categoryFilteredPackages.filter(pkg => {
+      if (pkg.price < minPrice || pkg.price > maxPrice) return false;
+      if (durationFilter !== 'any' && !matchesDurationBucket(getDurationDays(pkg.duration), durationFilter)) return false;
+      if (tripTypes.length > 0 && !tripTypes.includes(pkg.type as TripType)) return false;
+      return true;
+    });
+
+    if (sortBy === 'price-asc') list = [...list].sort((a, b) => a.price - b.price);
+    else if (sortBy === 'price-desc') list = [...list].sort((a, b) => b.price - a.price);
+    else if (sortBy === 'popularity') list = [...list].sort((a, b) => (b.bookingCount || 0) - (a.bookingCount || 0));
+
+    return list;
+  }, [categoryFilteredPackages, minPrice, maxPrice, durationFilter, tripTypes, sortBy]);
 
   // AI suggestions for zero-result searches
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -665,43 +760,61 @@ const App: React.FC = () => {
        </div>
        
        {!searchQuery && (
-         <div className="flex justify-center mb-16 overflow-x-auto no-scrollbar pb-4">
-          <div className="inline-flex items-center space-x-1 bg-white/5 p-1.5 rounded-[24px] border border-white/10 backdrop-blur-xl min-w-max">
-            {CATEGORIES.map(cat => (
-              <button 
-                key={cat}
-                onClick={() => handleCategoryChange(cat)}
-                className={`relative px-6 py-2.5 rounded-[18px] text-xs font-bold transition-all duration-300 ${
-                  activeCategory === cat 
-                    ? 'text-white' 
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
-              >
-                {activeCategory === cat && (
-                  <motion.div 
-                    layoutId="activeTabPackages"
-                    className="absolute inset-0 bg-indigo-600 rounded-[18px] shadow-lg shadow-indigo-600/20"
-                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <span className="relative z-10">{cat}</span>
-              </button>
-            ))}
-          </div>
-         </div>
+         <>
+           <div className="flex justify-center mb-8 overflow-x-auto no-scrollbar pb-4">
+            <div className="inline-flex items-center space-x-1 bg-white/5 p-1.5 rounded-[24px] border border-white/10 backdrop-blur-xl min-w-max">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => handleCategoryChange(cat)}
+                  className={`relative px-6 py-2.5 rounded-[18px] text-xs font-bold transition-all duration-300 ${
+                    activeCategory === cat
+                      ? 'text-white'
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  {activeCategory === cat && (
+                    <motion.div
+                      layoutId="activeTabPackages"
+                      className="absolute inset-0 bg-indigo-600 rounded-[18px] shadow-lg shadow-indigo-600/20"
+                      transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <span className="relative z-10">{cat}</span>
+                </button>
+              ))}
+            </div>
+           </div>
+
+           <PackageFilters
+             priceBounds={priceBounds}
+             minPrice={minPrice}
+             maxPrice={maxPrice}
+             duration={durationFilter}
+             tripTypes={tripTypes}
+             sortBy={sortBy}
+             resultCount={advancedFilteredPackages.length}
+             hasActiveFilters={hasActiveFilters}
+             onPriceChange={handlePriceChange}
+             onDurationChange={handleDurationChange}
+             onTripTypeToggle={handleTripTypeToggle}
+             onSortChange={handleSortChange}
+             onReset={resetAllFilters}
+           />
+         </>
        )}
 
        {isLoading ? (
          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
            {[...Array(8)].map((_, i) => <PackageSkeleton key={i} />)}
          </div>
-       ) : (searchQuery ? searchResults : categoryFilteredPackages).length > 0 ? (
+       ) : (searchQuery ? searchResults : advancedFilteredPackages).length > 0 ? (
          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {(searchQuery ? searchResults : categoryFilteredPackages).map((pkg) => (
-              <PackageCard 
-                key={pkg.id} 
-                pkg={pkg} 
-                onViewDetails={handleViewDetails} 
+            {(searchQuery ? searchResults : advancedFilteredPackages).map((pkg) => (
+              <PackageCard
+                key={pkg.id}
+                pkg={pkg}
+                onViewDetails={handleViewDetails}
                 onToggleSave={handleToggleSave}
                 onToggleAlert={handleToggleAlert}
                 isSaved={user?.savedPackages?.includes(pkg.id)}
@@ -709,6 +822,20 @@ const App: React.FC = () => {
               />
             ))}
          </div>
+       ) : !searchQuery && (hasActiveFilters || activeCategory !== 'All') ? (
+          <div data-testid="no-results-state" className="py-32 flex flex-col items-center justify-center bg-white/5 border border-white/10 border-dashed rounded-[40px] text-center">
+            <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6">
+              <Sparkles className="w-10 h-10 text-indigo-400" />
+            </div>
+            <h3 className="text-2xl font-serif font-bold text-white mb-2">No packages match your filters</h3>
+            <p className="text-gray-500 max-w-md mx-auto mb-8">Try widening your price range, changing the duration, or clearing the trip type filter.</p>
+            <button
+              onClick={resetAllFilters}
+              className="text-indigo-400 font-bold hover:underline bg-white/5 px-6 py-3 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
+            >
+              Reset All Filters ✕
+            </button>
+          </div>
        ) : (
           <div className="py-32 flex flex-col items-center justify-center bg-white/5 border border-white/10 border-dashed rounded-[40px] text-center">
             <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6">
